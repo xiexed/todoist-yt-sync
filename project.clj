@@ -6,7 +6,9 @@
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [javax.servlet/servlet-api "2.5"]
                  [ring "1.8.2"]
-                 [compojure "1.6.2"]]
+                 [compojure "1.6.2"]
+                 [ring-oauth2 "0.1.5"]
+                 [ring-logger "1.0.1"]]
   :plugins [[lein-ring "0.12.5"]]
   :ring {:handler todoist-sync.core/app}
   :repl-options {:init-ns todoist-sync.core})
