@@ -6,6 +6,7 @@
             [ring.middleware.params :refer [wrap-params]]
             [ring.middleware.oauth2 :refer [wrap-oauth2]]
             [ring.middleware.session :refer [wrap-session]]
+            [ring.middleware.session.memory :as ses-mem]
             [ring.logger :as logger]))
 
 (defroutes app-routes
@@ -14,6 +15,7 @@
            (GET "/hello" [:as request] (str "<h1>Hello World1</h1>" "<div>" (get-in request [:oauth2/access-tokens :todoist]) "</div>"))
            (route/not-found "<h1>Not Found</h1>"))
 
+(defonce session-atom (atom {}))
 
 (def app (-> app-routes
              (wrap-oauth2 {:todoist
@@ -25,7 +27,7 @@
                             :launch-uri       "/oauth2/todoist"
                             :redirect-uri     "/oauth2/todoist/callback"
                             :landing-uri      "/"}})
-             (wrap-session)
+             (wrap-session {:store (ses-mem/memory-store session-atom)})
              (wrap-cookies)
              (wrap-params)
              (logger/wrap-with-logger)))
