@@ -9,6 +9,17 @@
     Index pagea
 </h1>
 <div><a href="oauth2/todoist">/oauth2/todoist</a></div>
-<div><a href="hello">/hello</a></div>
+<div>
+    <form action="/post-task" method="post">
+        <div>
+        <label> Task:
+            <textarea name="text"></textarea>
+        </label>
+        </div>
+        <div>
+        <button type="submit">Send</button>
+        </div>
+    </form>
+</div>
 </body>
 </html>
