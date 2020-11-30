@@ -1,25 +1,125 @@
 <!DOCTYPE html>
 <html lang="en">
+<!--
+  WARNING! Make sure that you match all Quasar related
+  tags to the same version! (Below it's "@1.14.5")
+-->
+
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons" rel="stylesheet"
+          type="text/css">
+    <link href="https://cdn.jsdelivr.net/npm/quasar@1.14.5/dist/quasar.min.css" rel="stylesheet" type="text/css">
+    <title>Todoist sync</title>
 </head>
+
 <body>
-<h1>
-    Index pagea
-</h1>
-<div><a href="oauth2/todoist">/oauth2/todoist</a></div>
-<div>
-    <form action="/post-task" method="post">
-        <div>
-        <label> Task:
-            <textarea name="text"></textarea>
-        </label>
+
+<div id="q-app">
+    <div class="q-page-container" style="padding-top: 50px; padding-right: 180px; padding-left: 300px;">
+        <div class="q-pa-md">
+            <q-form
+                    @submit="onSubmit"
+                    @reset="onReset"
+                    class="q-gutter-md"
+            >
+
+                <div class="q-px-sm">
+                    <div v-if="todoist">
+                        <q-icon name="check_circle" class="text-green"></q-icon>
+                        Todoist Authenticated
+                    </div>
+                    <div v-else>
+                        <q-icon name="error" class="text-red"></q-icon>
+                        Todoist Is NOT Authenticated! (<a href="oauth2/todoist">Authenticate</a>)
+                    </div>
+                </div>
+
+                <q-input
+                        filled
+                        v-model="name"
+                        label="Your name *"
+                        hint="Name and surname"
+                        lazy-rules
+                        :rules="[ val => val && val.length > 0 || 'Please type something']"></q-input>
+
+
+                <q-input label="Tasks to add"
+                         v-model="text"
+                         filled
+                         type="textarea"></q-input>
+
+
+                <q-toggle v-model="accept" label="I accept the license and terms"></q-toggle>
+
+                <div>
+                    <q-btn label="Submit" type="submit" color="primary"></q-btn>
+                    <q-btn label="Reset" type="reset" color="primary" flat class="q-ml-sm"></q-btn>
+                </div>
+            </q-form>
+
         </div>
-        <div>
-        <button type="submit">Send</button>
-        </div>
-    </form>
+    </div>
 </div>
+
+<!-- Add the following at the end of your body tag -->
+
+<script src="https://cdn.jsdelivr.net/npm/vue@^2.0.0/dist/vue.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/quasar@1.14.5/dist/quasar.umd.min.js"></script>
+
+<script>
+    /*
+      Example kicking off the UI. Obviously, adapt this to your specific needs.
+      Assumes you have a <div id="q-app"></div> in your <body> above
+     */
+    new Vue({
+        el: '#q-app',
+        data: function () {
+            return {
+                name: null,
+                age: null,
+                accept: false,
+                todoist: false,
+                text: ''
+            }
+        },
+        async created() {
+            console.log("created");
+            let f = await fetch("/json/state");
+            let d = await f.json();
+
+            console.log("d = ", d);
+
+            this.todoist = d.todoist;
+
+
+        },
+        methods: {
+            onSubmit() {
+                if (this.accept !== true) {
+                    this.$q.notify({
+                        color: 'red-5',
+                        textColor: 'white',
+                        icon: 'warning',
+                        message: 'You need to accept the license and terms first'
+                    })
+                } else {
+                    this.$q.notify({
+                        color: 'green-4',
+                        textColor: 'white',
+                        icon: 'cloud_done',
+                        message: 'Submitted'
+                    })
+                }
+            },
+
+            onReset() {
+                this.name = null
+                this.age = null
+                this.accept = false
+            }
+        },
+        // ...etc
+    })
+</script>
 </body>
 </html>

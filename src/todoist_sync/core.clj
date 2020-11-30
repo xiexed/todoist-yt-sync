@@ -7,12 +7,21 @@
             [ring.middleware.params :refer [wrap-params]]
             [ring.middleware.oauth2 :refer [wrap-oauth2]]
             [ring.middleware.session :refer [wrap-session]]
+            [ring.middleware.json :refer [wrap-json-response]]
             [ring.middleware.session.memory :as ses-mem]
             [promesa.core :as p]))
+
+
+(defroutes json-api
+           (-> (context "/json" []
+                 (GET "/state" request
+                   (rur/response {:todoist (some? (get-in request [:oauth2/access-tokens :todoist :token]))})))
+               (wrap-json-response)))
 
 (defroutes app-routes
            (GET "/" [] (some-> (rur/resource-response "/index.html" {:root "public"}) (rur/content-type "text/html")))
            (route/resources "/")
+           json-api
            (POST "/post-task" [text :as request]
              (let [token (get-in request [:oauth2/access-tokens :todoist :token])]
                (println "data = " text "token = " token)
