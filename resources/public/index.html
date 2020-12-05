@@ -17,14 +17,9 @@
 <div id="q-app">
     <div class="q-page-container" style="padding-top: 50px; padding-right: 180px; padding-left: 300px;">
         <div class="q-pa-md">
-            <q-form
-                    @submit="onSubmit"
-                    @reset="onReset"
-                    class="q-gutter-md"
-            >
-
+            <q-form @submit="onSubmit" class="q-gutter-md">
                 <div class="q-px-sm">
-                    <div v-if="todoist">
+                    <div v-if="state.todoist">
                         <q-icon name="check_circle" class="text-green"></q-icon>
                         Todoist Authenticated
                     </div>
@@ -33,27 +28,23 @@
                         Todoist Is NOT Authenticated! (<a href="oauth2/todoist">Authenticate</a>)
                     </div>
                 </div>
-
-                <q-input
-                        filled
-                        v-model="name"
-                        label="Your name *"
-                        hint="Name and surname"
-                        lazy-rules
-                        :rules="[ val => val && val.length > 0 || 'Please type something']"></q-input>
-
+                <div class="q-px-sm">
+                    <div v-if="state.youtrack">
+                        <q-icon name="check_circle" class="text-green"></q-icon>
+                        Youtrack Authenticated
+                    </div>
+                    <div v-else>
+                        <q-icon name="error" class="text-red"></q-icon>
+                        Youtrack Is NOT Authenticated! (<a href="oauth2/hub">Authenticate</a>)
+                    </div>
+                </div>
 
                 <q-input label="Tasks to add"
                          v-model="text"
                          filled
                          type="textarea"></q-input>
-
-
-                <q-toggle v-model="accept" label="I accept the license and terms"></q-toggle>
-
                 <div>
                     <q-btn label="Submit" type="submit" color="primary"></q-btn>
-                    <q-btn label="Reset" type="reset" color="primary" flat class="q-ml-sm"></q-btn>
                 </div>
             </q-form>
 
@@ -78,7 +69,10 @@
                 name: null,
                 age: null,
                 accept: false,
-                todoist: false,
+                state: {
+                    todoist: false,
+                    youtrack: false
+                },
                 text: ''
             }
         },
@@ -86,36 +80,32 @@
             console.log("created");
             let f = await fetch("/json/state");
             let d = await f.json();
-
             console.log("d = ", d);
-
-            this.todoist = d.todoist;
-
-
+            this.state = d;
         },
         methods: {
             onSubmit() {
-                if (this.accept !== true) {
-                    this.$q.notify({
-                        color: 'red-5',
-                        textColor: 'white',
-                        icon: 'warning',
-                        message: 'You need to accept the license and terms first'
+                fetch("/json/do-task", {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: this.text,
+                        task: "yt-tag-parsed"
                     })
-                } else {
-                    this.$q.notify({
-                        color: 'green-4',
-                        textColor: 'white',
-                        icon: 'cloud_done',
-                        message: 'Submitted'
-                    })
-                }
-            },
-
-            onReset() {
-                this.name = null
-                this.age = null
-                this.accept = false
+                }).then(async (res) => {
+                    let d = await res.json();
+                    console.log("post d = ", d);
+                })
+                this.$q.notify({
+                    color: 'green-4',
+                    textColor: 'white',
+                    icon: 'cloud_done',
+                    message: 'Submitted'
+                })
+                this.text= '';
             }
         },
         // ...etc

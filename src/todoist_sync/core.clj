@@ -7,7 +7,7 @@
             [ring.middleware.params :refer [wrap-params]]
             [ring.middleware.oauth2 :refer [wrap-oauth2]]
             [ring.middleware.session :refer [wrap-session]]
-            [ring.middleware.json :refer [wrap-json-response]]
+            [ring.middleware.json :refer [wrap-json-response wrap-json-body]]
             [ring.middleware.session.memory :as ses-mem]
             [promesa.core :as p])
   (:import (com.typesafe.config ConfigFactory)))
@@ -16,8 +16,13 @@
 (defroutes json-api
            (-> (context "/json" []
                  (GET "/state" request
-                   (rur/response {:todoist (some? (get-in request [:oauth2/access-tokens :todoist :token]))})))
-               (wrap-json-response)))
+                   (rur/response {:todoist (some? (get-in request [:oauth2/access-tokens :todoist :token]))
+                                  :youtrack (some? (get-in request [:oauth2/access-tokens :youtrack :token]))}))
+                 (POST "/do-task" request
+                   (println "do-task-body" (request :body))
+                   (rur/response {:ok "ok"})))
+               (wrap-json-response)
+               (wrap-json-body {:keywords? true})))
 
 (defroutes app-routes
            (GET "/" [] (some-> (rur/resource-response "/index.html" {:root "public"}) (rur/content-type "text/html")))
