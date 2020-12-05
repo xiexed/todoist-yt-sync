@@ -12,6 +12,7 @@
             [promesa.core :as p])
   (:import (com.typesafe.config ConfigFactory)))
 
+(def last-sent-text (atom nil))
 
 (defroutes json-api
            (-> (context "/json" []
@@ -20,6 +21,7 @@
                                   :youtrack (some? (get-in request [:oauth2/access-tokens :youtrack :token]))}))
                  (POST "/do-task" request
                    (println "do-task-body" (request :body))
+                   (reset! last-sent-text (:text (request :body)))
                    (rur/response {:ok "ok"})))
                (wrap-json-response)
                (wrap-json-body {:keywords? true})))
