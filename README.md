@@ -8,6 +8,8 @@ A Clojure library designed to ... well, that part is up to you.
 
 ## Start in dev-mode
 
+`-Dconfig.file=application-dev.conf`
+
 ```clojure
 (require '[todoist-sync.core :refer :all])
 (require '[ring.adapter.jetty :as jt])
