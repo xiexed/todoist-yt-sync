@@ -9,7 +9,40 @@
     <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons" rel="stylesheet"
           type="text/css">
     <link href="https://cdn.jsdelivr.net/npm/quasar@1.14.5/dist/quasar.min.css" rel="stylesheet" type="text/css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.0.0/animate.min.css" rel="stylesheet">
     <title>Todoist sync</title>
+    <style>
+
+
+        .flip-list-enter .flip-list-leave-to {
+            opacity: 0;
+        }
+
+        /*.flip-list-enter-active {*/
+        /*    animation: fadein 1s;*/
+        /*}*/
+
+        /*.flip-list-leave {*/
+        /*    opacity: 0;*/
+        /*}*/
+
+        /*.flip-list-leave-active {*/
+        /*    animation: fadein 1s;*/
+        /*}*/
+
+        .flip-list-move {
+            transition: transform 1s;
+        }
+
+        /*@keyframes fadein {*/
+        /*    from {*/
+        /*        opacity: 0;*/
+        /*    }*/
+        /*    to {*/
+        /*        opacity: 1;*/
+        /*    }*/
+        /*}*/
+    </style>
 </head>
 
 <body>
@@ -44,8 +77,32 @@
                     <q-btn label="Submit" type="submit" color="primary"></q-btn>
                 </div>
             </q-form>
-
         </div>
+        <transition-group name="flip-list">
+            <div class="q-pa-md" v-for="task in tasks" :key="task">
+                <q-banner rounded class="bg-primary text-white">
+                    <q-spinner color="white" size="3em" :thickness="10"></q-spinner>
+                    <span class="q-px-sm">
+                    {{ task.text }}
+                </span>
+                </q-banner>
+            </div>
+
+            <div class="q-pa-md" v-for="output in outputs" :key="output">
+                <div class="q-card q-card--bordered no-shadow">
+                    <q-toolbar class="text-primary">
+                        <q-toolbar-title>{{ output.title }}</q-toolbar-title>
+                        <q-btn flat round dense icon="clear" @click="outputClose(output)"></q-btn>
+                    </q-toolbar>
+                    <div class="q-pa-md">
+                        <div v-if="output.data['issues-missing']">Issues not in query, but still has an 'Scheduled' Tag:</div>
+                        <li v-for="issue in output.data['issues-missing']" :key="issue">
+                            <a :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{ issue.issue }}</a> {{ issue.summary }}
+                        </li>
+                    </div>
+                </div>
+            </div>
+        </transition-group>
     </div>
 </div>
 
@@ -70,7 +127,9 @@
                     todoist: false,
                     youtrack: false
                 },
-                text: ''
+                text: '',
+                tasks: [],
+                outputs: []
             }
         },
         async created() {
@@ -81,7 +140,16 @@
             this.state = d;
         },
         methods: {
+            outputClose(output) {
+                let i = this.outputs.indexOf(output);
+                console.log("output close", output, i);
+                this.$delete(this.outputs, i)
+            },
             onSubmit() {
+
+                let task = {text: "Adding Scheduled Tag"};
+                this.tasks.push(task)
+
                 fetch("/json/do-task", {
                     method: 'POST',
                     headers: {
@@ -95,14 +163,13 @@
                 }).then(async (res) => {
                     let d = await res.json();
                     console.log("post d = ", d);
+                    let i = this.tasks.indexOf(task);
+                    this.$delete(this.tasks, i)
+                    let items = {title: "Tags added", data: d};
+                    console.log("post items = ", JSON.stringify(items) );
+                    this.outputs.push(items)
                 })
-                this.$q.notify({
-                    color: 'green-4',
-                    textColor: 'white',
-                    icon: 'cloud_done',
-                    message: 'Submitted'
-                })
-                this.text= '';
+                this.text = '';
             }
         },
         // ...etc
