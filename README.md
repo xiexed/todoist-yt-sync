@@ -15,6 +15,13 @@ A Clojure library designed to ... well, that part is up to you.
 (def server (jt/run-jetty (wrap-reload #'app) {:port 3000 :join? false}))
 ```
 
+## Development hints
+
+Getting from session
+```clojure
+(def yt-token (->> (deref session-atom) (vals) (first) (:ring.middleware.oauth2/access-tokens) (:youtrack) (:token)))
+```
+
 ## License
 
 Copyright © 2020 FIXME

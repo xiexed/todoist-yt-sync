@@ -50,6 +50,15 @@
                                           :scopes           ["data:read_write"]
                                           :launch-uri       "/oauth2/todoist"
                                           :redirect-uri     "/oauth2/todoist/callback"
+                                          :landing-uri      "/"}
+                                         :youtrack
+                                         {:authorize-uri    "https://hub.jetbrains.com/api/rest/oauth2/auth"
+                                          :access-token-uri "https://hub.jetbrains.com/api/rest/oauth2/token"
+                                          :client-id        "<hub-client-id-here>"
+                                          :client-secret    "<hub-secret-here>"
+                                          :scopes           ["YouTrack"]
+                                          :launch-uri       "/oauth2/hub"
+                                          :redirect-uri     "/oauth2/hub/callback"
                                           :landing-uri      "/"}}))
              (wrap-session {:store (ses-mem/memory-store session-atom)})
              (wrap-cookies)
