@@ -2,6 +2,8 @@
   (:require [compojure.core :refer :all]
             [compojure.route :as route]
             [todoist-sync.todoist :as tdst]
+            [todoist-sync.texts-handler :as thd]
+            [todoist-sync.workflow :as workflow]
             [ring.util.response :as rur]
             [ring.middleware.cookies :refer [wrap-cookies]]
             [ring.middleware.params :refer [wrap-params]]
@@ -10,19 +12,33 @@
             [ring.middleware.json :refer [wrap-json-response wrap-json-body]]
             [ring.middleware.session.memory :as ses-mem]
             [promesa.core :as p])
-  (:import (com.typesafe.config ConfigFactory)))
+  (:import (com.typesafe.config ConfigFactory)
+           (org.joda.time DateTime)))
 
 (def last-sent-text (atom nil))
+
+(defn yt-token [request]
+  (let [token-info (get-in request [:oauth2/access-tokens :youtrack])
+        ^DateTime expires (:expires token-info)]
+    (when (.isAfterNow expires)
+      (token-info :token))))
 
 (defroutes json-api
            (-> (context "/json" []
                  (GET "/state" request
-                   (rur/response {:todoist (some? (get-in request [:oauth2/access-tokens :todoist :token]))
-                                  :youtrack (some? (get-in request [:oauth2/access-tokens :youtrack :token]))}))
+                   (rur/response {:todoist  (some? (get-in request [:oauth2/access-tokens :todoist :token]))
+                                  :youtrack (some? (yt-token request))}))
                  (POST "/do-task" request
                    (println "do-task-body" (request :body))
                    (reset! last-sent-text (:text (request :body)))
-                   (rur/response {:ok "ok"})))
+                   (let [issues (thd/extract-issues-id-from-lis (:text (request :body)))
+                         yt-token (yt-token request)
+                         _ (workflow/add-scheduled-tag-for-issues yt-token issues)
+                         known-scheduled-issues (workflow/get-all-scheduled-issues yt-token)]
+                     (rur/response {:ok "ok"
+                                    :issues-added issues
+                                    :issues-missing (let [issues-set (set issues)]
+                                                      (remove #(issues-set (:issue %)) known-scheduled-issues))}))))
                (wrap-json-response)
                (wrap-json-body {:keywords? true})))
 

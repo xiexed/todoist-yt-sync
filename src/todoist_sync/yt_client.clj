@@ -2,7 +2,7 @@
   (:require [clj-http.client :as client]
             [clojure.data.json :as json]))
 
-(defn mk-url [conf path] (str (conf :host) path))
+(defn mk-url [conf path] (str (conf :host "https://youtrack.jetbrains.com/api/") path))
 
 (defn yt-request
   ([conf method url params]
@@ -17,8 +17,11 @@
        (update :body json/read-json)))
   ([conf url] (yt-request conf :get url {})))
 
-(defn get-from-yt [conf path query]
-  (:body (yt-request conf :get path {:query-params query})))
+(defn get-from-yt
+  ([conf path query]
+   (get-from-yt conf path query {}))
+  ([conf path query params]
+   (:body (yt-request conf :get path (assoc params :query-params query)))))
 
 (defn projects [conf] (get-from-yt conf "admin/projects" {:fields ["id,name,shortName,createdBy(login,name,id),leader(login,name,id)"]}))
 
@@ -29,13 +32,17 @@
 (defn issues
   ([conf] (issues conf default-query))
   ([conf query] (issues conf query {}))
-  ([conf query {:keys [fields]}]
-   (get-from-yt conf "issues" {:fields (or fields *default-issue-fields*) :$top 500 :query query})))
+  ([conf query y-params]
+   (issues conf query y-params {}))
+  ([conf query {:keys [fields]} req-params]
+   (get-from-yt conf "issues" {:fields (or fields *default-issue-fields*) :$top 500 :query query} req-params)))
 
 (defn issue
   ([conf id] (issue conf id {}))
-  ([conf id {:keys [fields]}]
-   (get-from-yt conf (str "issues/" id) {:fields (or fields *default-issue-fields*)})))
+  ([conf id y-params]
+   (issue conf id y-params {}))
+  ([conf id {:keys [fields]} params]
+   (get-from-yt conf (str "issues/" id) {:fields (or fields *default-issue-fields*)} params)))
 
 (defn activities
   ([conf id] (activities id {}))
