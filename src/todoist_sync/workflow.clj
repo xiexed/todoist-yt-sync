@@ -15,5 +15,5 @@
     (yt-client/yt-request {:key yt-token} :post (str "issues/" issue) {:query-params {:fields "tags"} :body (json/write-str new-tags)})))
 
 (defn get-all-scheduled-issues [yt-token]
-  (->> (yt-client/issues {:key yt-token} "assigned to: me tag: Scheduled")
+  (->> (yt-client/issues {:key yt-token} "assigned to: me tag: in-my-plan")
        (map (fn [resp] {:issue (str (get-in resp [:project :shortName]) "-" (:numberInProject resp)) :summary (:summary resp)}))))
