@@ -95,6 +95,7 @@
                         <q-btn flat round dense icon="clear" @click="outputClose(output)"></q-btn>
                     </q-toolbar>
                     <div class="q-pa-md">
+                        <div v-if="output.data.text"> {{ output.data.text }}</div>
                         <div v-if="output.data['issues-missing']">Issues not in query, but still has an 'Scheduled' Tag:</div>
                         <li v-for="issue in output.data['issues-missing']" :key="issue">
                             <a :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{ issue.issue }}</a> {{ issue.summary }}
@@ -163,9 +164,14 @@
                 }).then(async (res) => {
                     let d = await res.json();
                     console.log("post d = ", d);
-                    let i = this.tasks.indexOf(task);
-                    this.$delete(this.tasks, i)
+                    this.$delete(this.tasks, this.tasks.indexOf(task))
                     let items = {title: "Tags added", data: d};
+                    console.log("post items = ", JSON.stringify(items) );
+                    this.outputs.push(items)
+                }).catch(async (e) => {
+                    console.log("err  = ", e);
+                    this.$delete(this.tasks, this.tasks.indexOf(task))
+                    let items = {title: "Error", data: {text: e.message}};
                     console.log("post items = ", JSON.stringify(items) );
                     this.outputs.push(items)
                 })

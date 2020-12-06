@@ -20,7 +20,7 @@
 (defn yt-token [request]
   (let [token-info (get-in request [:oauth2/access-tokens :youtrack])
         ^DateTime expires (:expires token-info)]
-    (when (.isAfterNow expires)
+    (when (and expires (.isAfterNow expires))
       (token-info :token))))
 
 (defroutes json-api
