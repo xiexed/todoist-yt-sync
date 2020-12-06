@@ -12,36 +12,21 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.0.0/animate.min.css" rel="stylesheet">
     <title>Todoist sync</title>
     <style>
-
-
-        .flip-list-enter .flip-list-leave-to {
-            opacity: 0;
+        .list-complete-enter-active, .list-complete-leave-active {
+            transition: all 1s;
         }
-
-        /*.flip-list-enter-active {*/
-        /*    animation: fadein 1s;*/
-        /*}*/
-
-        /*.flip-list-leave {*/
-        /*    opacity: 0;*/
-        /*}*/
-
-        /*.flip-list-leave-active {*/
-        /*    animation: fadein 1s;*/
-        /*}*/
-
-        .flip-list-move {
+        .list-complete-enter  {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        .list-complete-leave-to  {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        .list-complete-move {
             transition: transform 1s;
         }
 
-        /*@keyframes fadein {*/
-        /*    from {*/
-        /*        opacity: 0;*/
-        /*    }*/
-        /*    to {*/
-        /*        opacity: 1;*/
-        /*    }*/
-        /*}*/
     </style>
 </head>
 
@@ -78,31 +63,33 @@
                 </div>
             </q-form>
         </div>
-        <transition-group name="flip-list">
-            <div class="q-pa-md" v-for="task in tasks" :key="task">
-                <q-banner rounded class="bg-primary text-white">
-                    <q-spinner color="white" size="3em" :thickness="10"></q-spinner>
-                    <span class="q-px-sm">
-                    {{ task.text }}
-                </span>
-                </q-banner>
-            </div>
 
-            <div class="q-pa-md" v-for="output in outputs" :key="output">
-                <div class="q-card q-card--bordered no-shadow">
-                    <q-toolbar class="text-primary">
-                        <q-toolbar-title>{{ output.title }}</q-toolbar-title>
-                        <q-btn flat round dense icon="clear" @click="outputClose(output)"></q-btn>
-                    </q-toolbar>
-                    <div class="q-pa-md">
-                        <div v-if="output.data.text"> {{ output.data.text }}</div>
-                        <div v-if="output.data['issues-missing']">Issues not in query, but still has an 'Scheduled' Tag:</div>
-                        <li v-for="issue in output.data['issues-missing']" :key="issue">
-                            <a :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{ issue.issue }}</a> {{ issue.summary }}
-                        </li>
+        <transition-group name="list-complete">
+                <div class="q-pa-md" v-for="task in tasks" :key="task">
+                    <q-banner rounded class="bg-primary text-white">
+                        <q-spinner color="white" size="3em" :thickness="10"></q-spinner>
+                        <span class="q-px-sm">{{ task.text }}</span>
+                    </q-banner>
+                </div>
+                <div class="q-pa-md" v-for="output in outputs" :key="output">
+                    <div class="q-card q-card--bordered no-shadow">
+                        <q-toolbar class="text-primary">
+                            <q-toolbar-title>{{ output.title }}</q-toolbar-title>
+                            <q-btn flat round dense icon="clear" @click="outputClose(output)"></q-btn>
+                        </q-toolbar>
+                        <div class="q-pa-md">
+                            <div v-if="output.data.text"> {{ output.data.text }}</div>
+                            <div v-if="output.data['issues-missing']">Issues not in query, but still has an 'Scheduled'
+                                Tag:
+                            </div>
+                            <li v-for="issue in output.data['issues-missing']" :key="issue">
+                                <a :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{ issue.issue }}</a>
+                                {{ issue.summary }}
+                            </li>
+                        </div>
                     </div>
                 </div>
-            </div>
+
         </transition-group>
     </div>
 </div>
@@ -142,9 +129,7 @@
         },
         methods: {
             outputClose(output) {
-                let i = this.outputs.indexOf(output);
-                console.log("output close", output, i);
-                this.$delete(this.outputs, i)
+                this.$delete(this.outputs, this.outputs.indexOf(output))
             },
             onSubmit() {
 
