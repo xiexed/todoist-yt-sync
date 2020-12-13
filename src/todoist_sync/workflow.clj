@@ -1,6 +1,8 @@
 (ns todoist-sync.workflow
   (:require [todoist-sync.yt-client :as yt-client]
-            [clojure.data.json :as json]))
+            [todoist-sync.texts-handler :as thd]
+            [clojure.data.json :as json]
+            [clojure.string :as str]))
 
 (def scheduled-tag-id "68-204271")
 
@@ -17,3 +19,25 @@
 (defn get-all-scheduled-issues [yt-token]
   (->> (yt-client/issues {:key yt-token} "assigned to: me tag: in-my-plan")
        (map (fn [resp] {:issue (str (get-in resp [:project :shortName]) "-" (:numberInProject resp)) :summary (:summary resp)}))))
+
+(defn update-scheduled-tag [{yt-token :youtrack} body]
+  (let [issues (thd/extract-issues-id-from-lis (:text body))
+        _ (add-scheduled-tag-for-issues yt-token issues)
+        known-scheduled-issues (get-all-scheduled-issues yt-token)]
+    {:issues-added   issues
+     :issues-missing (let [issues-set (set issues)]
+                       (remove #(issues-set (:issue %)) known-scheduled-issues))}))
+
+(def handlers
+  [{:name "Update Scheduled Tag"
+   :available #(:youtrack %)
+   :handler update-scheduled-tag
+   }])
+
+(defn handler-id [{:keys [name]}] (str/replace name #"\s+" ""))
+
+(defn handlers-available [tokens]
+  (->> handlers
+       (filter #((:available %) tokens))
+       (map (fn [h] {:value (handler-id h)
+                     :label (:name h)}))))

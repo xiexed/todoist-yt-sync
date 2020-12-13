@@ -23,22 +23,20 @@
     (when (and expires (.isAfterNow expires))
       (token-info :token))))
 
+(defn tokens [request]
+  {:todoist  (get-in request [:oauth2/access-tokens :todoist :token])
+   :youtrack (yt-token request)})
+
 (defroutes json-api
            (-> (context "/json" []
                  (GET "/state" request
-                   (rur/response {:todoist  (some? (get-in request [:oauth2/access-tokens :todoist :token]))
-                                  :youtrack (some? (yt-token request))}))
+                   (rur/response (let [tokens (tokens request)]
+                                   (merge (->> tokens (map (fn [[k v]] [k (some? v)])) (into {}))
+                                          {:task-options (workflow/handlers-available tokens)}))))
                  (POST "/do-task" request
                    (println "do-task-body" (request :body))
                    (reset! last-sent-text (:text (request :body)))
-                   (let [issues (thd/extract-issues-id-from-lis (:text (request :body)))
-                         yt-token (yt-token request)
-                         _ (workflow/add-scheduled-tag-for-issues yt-token issues)
-                         known-scheduled-issues (workflow/get-all-scheduled-issues yt-token)]
-                     (rur/response {:ok "ok"
-                                    :issues-added issues
-                                    :issues-missing (let [issues-set (set issues)]
-                                                      (remove #(issues-set (:issue %)) known-scheduled-issues))}))))
+                   (rur/response (workflow/update-scheduled-tag (tokens request) (:body request)))))
                (wrap-json-response)
                (wrap-json-body {:keywords? true})))
 

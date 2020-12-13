@@ -57,9 +57,10 @@
                     </div>
                 </div>
 
+                <q-select v-model="taskSelected" :options="state['task-options']" label="Task to do"></q-select>
                 <q-editor label="Tasks to add" v-model="text" filled type="textarea"></q-editor>
                 <div>
-                    <q-btn label="Submit" type="submit" color="primary"></q-btn>
+                    <q-btn label="Submit" type="submit" color="primary" :disable="taskSelected == null"></q-btn>
                 </div>
             </q-form>
         </div>
@@ -113,10 +114,12 @@
                 accept: false,
                 state: {
                     todoist: false,
-                    youtrack: false
+                    youtrack: false,
+                    "task-options": [],
                 },
                 text: '',
                 tasks: [],
+                taskSelected: null,
                 outputs: []
             }
         },
@@ -126,6 +129,8 @@
             let d = await f.json();
             console.log("d = ", d);
             this.state = d;
+            let lastSelectedValue = this.$q.cookies.get('taskSelected');
+            this.taskSelected = this.state["task-options"].find((t) => t.value === lastSelectedValue)
         },
         methods: {
             outputClose(output) {
@@ -136,6 +141,7 @@
                 let task = {text: "Adding Scheduled Tag"};
                 this.tasks.push(task)
 
+                this.$q.cookies.set('taskSelected', this.taskSelected.value)
                 fetch("/json/do-task", {
                     method: 'POST',
                     headers: {
@@ -144,7 +150,7 @@
                     },
                     body: JSON.stringify({
                         text: this.text,
-                        task: "yt-tag-parsed"
+                        task: this.taskSelected
                     })
                 }).then(async (res) => {
                     let d = await res.json();
