@@ -29,10 +29,12 @@
                        (remove #(issues-set (:issue %)) known-scheduled-issues))}))
 
 (def handlers
-  [{:name "Update Scheduled Tag"
-   :available #(:youtrack %)
-   :handler update-scheduled-tag
-   }])
+  [{:name      "Update Scheduled Tag"
+    :available #(:youtrack %)
+    :handler   update-scheduled-tag}
+   {:name      "Convert Html to Markdown"
+    :available (constantly true)
+    :handler   (fn [_ {:keys [text]}] {:text-out (thd/to-markdown (thd/parse-html-text text))})}])
 
 (defn handler-id [{:keys [name]}] (str/replace name #"\s+" ""))
 
@@ -41,3 +43,5 @@
        (filter #((:available %) tokens))
        (map (fn [h] {:value (handler-id h)
                      :label (:name h)}))))
+
+(defn handler-by-id [id] (:handler (first (filter (fn [h] (= (handler-id h) id)) handlers))))

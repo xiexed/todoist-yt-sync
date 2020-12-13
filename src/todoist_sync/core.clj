@@ -36,7 +36,12 @@
                  (POST "/do-task" request
                    (println "do-task-body" (request :body))
                    (reset! last-sent-text (:text (request :body)))
-                   (rur/response (workflow/update-scheduled-tag (tokens request) (:body request)))))
+                   (let [task-id (get-in request [:body :task :value])]
+                     (if-let [h (workflow/handler-by-id task-id)]
+                       (let [value (h (tokens request) (:body request))]
+                         (println "resp = " value)
+                         (rur/response value))
+                       (rur/bad-request (str "No task " task-id))))))
                (wrap-json-response)
                (wrap-json-body {:keywords? true})))
 

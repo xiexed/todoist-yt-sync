@@ -80,6 +80,7 @@
                         </q-toolbar>
                         <div class="q-pa-md">
                             <div v-if="output.data.text"> {{ output.data.text }}</div>
+                            <div v-if="output.data['text-out']"><pre @click.native="$event.target.select()"> {{ output.data['text-out'] }}</pre></div>
                             <div v-if="output.data['issues-missing']">Issues not in query, but still has an 'Scheduled'
                                 Tag:
                             </div>
@@ -139,7 +140,7 @@
             onSubmit() {
 
                 let task = {text: "Adding Scheduled Tag"};
-                this.tasks.push(task)
+                this.tasks.unshift(task)
 
                 this.$q.cookies.set('taskSelected', this.taskSelected.value)
                 fetch("/json/do-task", {
@@ -156,15 +157,15 @@
                     let d = await res.json();
                     console.log("post d = ", d);
                     this.$delete(this.tasks, this.tasks.indexOf(task))
-                    let items = {title: "Tags added", data: d};
+                    let items = {title: this.taskSelected.label, data: d};
                     console.log("post items = ", JSON.stringify(items) );
-                    this.outputs.push(items)
+                    this.outputs.unshift(items)
                 }).catch(async (e) => {
                     console.log("err  = ", e);
                     this.$delete(this.tasks, this.tasks.indexOf(task))
                     let items = {title: "Error", data: {text: e.message}};
                     console.log("post items = ", JSON.stringify(items) );
-                    this.outputs.push(items)
+                    this.outputs.unshift(items)
                 })
                 this.text = '';
             }
