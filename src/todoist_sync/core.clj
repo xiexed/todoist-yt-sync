@@ -13,7 +13,23 @@
             [ring.middleware.session.memory :as ses-mem]
             [promesa.core :as p])
   (:import (com.typesafe.config ConfigFactory)
-           (org.joda.time DateTime)))
+           (org.joda.time DateTime)
+           (java.net URL)
+           (java.io File InputStream)))
+
+; a workaround for https://github.com/ring-clojure/ring/issues/184 taken from http://stackoverflow.com/a/35173453/5201186
+(defmethod ring.util.response/resource-data :vfs
+  [^URL url]
+  (let [conn (.openConnection url)
+        vfile (.getContent conn)]
+    (condp instance? vfile
+      File (when-not (.isDirectory ^File vfile)
+             {:content        (.getInputStream conn)
+              :content-length (.getContentLength conn)
+              :last-modified  (-> vfile
+                                  .getPhysicalFile
+                                  ring.util.io/last-modified-date)})
+      InputStream {:content vfile})))
 
 (def last-sent-text (atom nil))
 

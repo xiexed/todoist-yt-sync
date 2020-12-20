@@ -1,0 +1,20 @@
+- hosts: wildfly
+  tasks:
+    - name: "ensure wars dir"
+      file: { path: "/var/local/wildfly-deployments", state: directory }
+    - name: "copy todoist war"
+      copy:
+        src: "../target/todoist-sync-0.1.0-SNAPSHOT-standalone.war"
+        dest: "/var/local/wildfly-deployments/todoist-sync.war"
+      notify: ["deploy td-sync"]
+  handlers:
+    - name: deploy td-sync
+      command:
+        argv:
+          - /opt/wildfly/bin/jboss-cli.sh
+          - --connect
+          - --command=deploy --force /var/local/wildfly-deployments/todoist-sync.war
+
+
+
+

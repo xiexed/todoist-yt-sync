@@ -1,0 +1,9 @@
+all:
+  hosts:
+    uits-labs:
+      ansible_host: deb10.uits-labs.ru
+      ansible_user: root
+  children:
+    wildfly:
+      hosts:
+        uits-labs:

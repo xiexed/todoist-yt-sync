@@ -1,0 +1,36 @@
+- hosts: wildfly
+  collections:
+    - wildfly.jcliff
+  tasks:
+    - name: Download JCliff
+      unarchive:
+        src: "https://github.com/bserdar/jcliff/releases/download/v2.12.6/jcliff-2.12.6-dist.tar.gz"
+        creates: /opt/jcliff-2.12.6
+        dest: /opt/
+        owner: root
+        remote_src: yes
+    - name: Make JCliff runnable
+      file: { path: /opt/jcliff-2.12.6/jcliff, mode: 'u=rwx,g=rwx,o=rx' }
+    - name: Symlink JCliff
+      file:
+        src: /opt/jcliff-2.12.6/jcliff
+        dest: /usr/local/bin/jcliff
+        state: link
+    - name: Define JBOSS_HOME
+      lineinfile: { path: /etc/environment, line: "JBOSS_HOME=/opt/wildfly/" }
+    - name: Define JCLIFF_HOME
+      lineinfile: { path: /etc/environment, line: "JCLIFF_HOME=/opt/jcliff-2.12.6/" }
+    - name: Do something in JCLiff
+      # Good samples are here https://developers.redhat.com/blog/2020/12/03/wildfly-server-configuration-with-ansible-collection-for-jcliff-part-2/
+      jcliff:
+        wfly_home: /opt/wildfly/
+        subsystems:
+          - system_props:
+              - name: jcliff.enabled
+                value: 'enabled'
+              - name: jcliff.version
+                value: '1.0'
+
+
+
+
