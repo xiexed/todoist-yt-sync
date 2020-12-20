@@ -7,3 +7,6 @@ all:
     wildfly:
       hosts:
         uits-labs:
+  vars:
+    domain_name: td.uits-labs.ru
+    wildfly_path_name: todoist-sync

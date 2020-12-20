@@ -1,0 +1,28 @@
+- hosts: wildfly
+  tasks:
+    - name: "certbot"
+      command: "certbot certonly --nginx -n -d {{ domain_name }}"
+      args:
+        creates: /etc/letsencrypt/live/{{ domain_name }}/privkey.pem
+    - name: Install {{ domain_name }} handling on nginx
+      template:
+        src: templates/nginx-wildfly-proxy.config.j2
+        dest: "/etc/nginx/sites-available/{{ domain_name }}"
+      notify: ["restart nginx"]
+    - name: Enable {{ domain_name }} handling on nginx
+      file:
+        src:  "/etc/nginx/sites-available/{{ domain_name }}"
+        dest: "/etc/nginx/sites-enabled/{{ domain_name }}"
+        state: link
+      notify: ["restart nginx"]
+    - name: Verify Nginx config
+      command: nginx -t
+      changed_when: false
+
+
+  handlers:
+    - name: restart nginx
+      command: systemctl restart nginx
+
+
+
