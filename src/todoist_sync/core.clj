@@ -11,7 +11,8 @@
             [ring.middleware.session :refer [wrap-session]]
             [ring.middleware.json :refer [wrap-json-response wrap-json-body]]
             [ring.middleware.session.memory :as ses-mem]
-            [promesa.core :as p])
+            [promesa.core :as p]
+            [clojure.string :as str])
   (:import (com.typesafe.config ConfigFactory)
            (org.joda.time DateTime)
            (java.net URL)
@@ -77,14 +78,22 @@
 
 
 (defn wrap-sync [next-handler sync-handler-to-wrap]
-  (fn
-    ([request] ((sync-handler-to-wrap next-handler) request))
-    ([request respond raise]
-     (let [dr (p/deferred)
-           resp ((sync-handler-to-wrap (fn [request] (p/resolve! dr request))) request)]
-       (if (p/resolved? dr)
-         (next-handler @dr respond raise)
-         (respond resp))))))
+  (let [fix-request (fn [request]
+                      (if-let [sctx (:servlet-context-path request)]
+                        (-> request
+                            (update :uri
+                                    (fn [uri pref] (if (str/starts-with? uri pref) (.substring uri (count pref)) uri))
+                                    sctx)
+                            (assoc :scheme :https))
+                        request))]
+    (fn
+      ([request] ((sync-handler-to-wrap next-handler) (fix-request request)))
+      ([request respond raise]
+       (let [dr (p/deferred)
+             resp ((sync-handler-to-wrap (fn [request] (p/resolve! dr request))) (fix-request request))]
+         (if (p/resolved? dr)
+           (next-handler @dr respond raise)
+           (respond resp)))))))
 
 
 (def app (let [conf (ConfigFactory/load)]
