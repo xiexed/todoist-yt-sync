@@ -108,6 +108,9 @@
                                     {{ issue.summary }}
                                 </li>
                             </div>
+                            <div v-if="output.data['duplicates']">Issues appears more than once:
+                                <span v-for="issue in output.data['duplicates']" :key="issue">{{ issue }} </span>
+                            </div>
                         </div>
                     </div>
                 </div>

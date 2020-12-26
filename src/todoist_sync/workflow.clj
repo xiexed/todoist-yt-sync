@@ -35,9 +35,10 @@
         tag-name (:tag (:settings body) "in-my-plan")
         added (add-tag-for-issues yt-token issues tag-name)
         known-scheduled-issues (get-all-tagged-issues yt-token tag-name)]
-    {:issues-added   added
+    {:duplicates     (->> issues (frequencies) (filter (fn [[_ f]] (> f 1))) (map first) (not-empty))
+     :issues-added   added
      :issues-missing (let [issues-set (set issues)]
-                       (remove #(issues-set (:issue %)) known-scheduled-issues))}))
+                       (not-empty (remove #(issues-set (:issue %)) known-scheduled-issues)))}))
 
 (def handlers
   [{:name      "Sync tag for Issues"
