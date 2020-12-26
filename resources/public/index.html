@@ -64,6 +64,10 @@
                         <q-input v-model="settings.separator" label="Separator" stack-label></q-input>
                         <q-input v-model="settings.prefixes" label="Prefixes" stack-label></q-input>
                     </div>
+                    <div class="q-tab-panel"
+                         v-if="taskSelected && taskSelected.value === 'SynctagforIssues'">
+                        <q-input v-model="settings.tag" label="Tag to Sync" stack-label></q-input>
+                    </div>
                 </q-expansion-item>
                 <q-editor label="Tasks to add" v-model="text" filled type="textarea"></q-editor>
                 <div>
@@ -87,14 +91,23 @@
                         </q-toolbar>
                         <div class="q-pa-md">
                             <div v-if="output.data.text">{{ output.data.text }}</div>
-                            <div v-if="output.data['text-out']"><pre @click.native="$event.target.select()">{{ output.data['text-out'] }}</pre></div>
-                            <div v-if="output.data['issues-missing']">Issues not in query, but still has an 'Scheduled'
-                                Tag:
+                            <div v-if="output.data['text-out']">
+                                <pre @click.native="$event.target.select()">{{ output.data['text-out'] }}</pre>
                             </div>
-                            <li v-for="issue in output.data['issues-missing']" :key="issue">
-                                <a :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{ issue.issue }}</a>
-                                {{ issue.summary }}
-                            </li>
+                            <div v-if="output.data['issues-added']">Issues tag was added to
+                                <li v-for="issue in output.data['issues-added']" :key="issue">
+                                    <a :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{ issue.issue
+                                        }}</a>
+                                    {{ issue.summary }}
+                                </li>
+                            </div>
+                            <div v-if="output.data['issues-missing']">Issues not in query, but still has a tag
+                                <li v-for="issue in output.data['issues-missing']" :key="issue">
+                                    <a :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{ issue.issue
+                                        }}</a>
+                                    {{ issue.summary }}
+                                </li>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -128,6 +141,7 @@
                 settings: {
                     separator: " ",
                     prefixes: "IDEA KT KTIJ",
+                    tag: "in-my-plan",
                 },
                 text: '',
                 tasks: [],
