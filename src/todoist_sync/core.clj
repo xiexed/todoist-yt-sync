@@ -101,8 +101,8 @@
               (wrap-sync #(wrap-oauth2 % {:todoist
                                           {:authorize-uri    "https://todoist.com/oauth/authorize"
                                            :access-token-uri "https://todoist.com/oauth/access_token"
-                                           :client-id        "819888a01ddf4c9ab60d45e60d4a749c"
-                                           :client-secret    "d228ac08b0ae4bcba341b1e80e9752b4"
+                                           :client-id        (.getString conf "oauth.todoist.client-id")
+                                           :client-secret    (.getString conf "oauth.todoist.client-secret")
                                            :scopes           ["data:read_write"]
                                            :launch-uri       "/oauth2/todoist"
                                            :redirect-uri     "/oauth2/todoist/callback"

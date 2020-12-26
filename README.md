@@ -4,7 +4,13 @@ A Clojure library designed to ... well, that part is up to you.
 
 ## Usage
 
-    lein ring server-headless
+Put `application.conf` with appropriate keys into `resources/application.conf`.
+
+Run either locally by `lein ring server-headless`
+Or deploy to production from ansible folder
+
+    lein ring uberwar
+    ansible-playbook -i inventories/uits-labs/inventory.yaml  playbook-deploy.yaml
 
 ## Start in dev-mode
 
