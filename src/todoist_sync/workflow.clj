@@ -9,26 +9,28 @@
    :summary (:summary resp)})
 
 (defn add-tag-for-issues [yt-token issues tag-name]
-  (let [issues (not-empty
-                 (for [issue issues
-                       :let [tags-query-response
-                             (yt-client/issue {:key yt-token}
-                                              issue {:fields "id,idReadable,summary,tags(name,id)"}
-                                              {:throw-exceptions false})]
-                       :when (not (:error tags-query-response))
-                       :let [tags (:tags tags-query-response)]
-                       :when (not-any? #(= tag-name (:name %)) tags)]
-                   tags-query-response))]
+  (let [issues (for [issue issues
+                     :let [tags-query-response
+                           (yt-client/issue {:key yt-token}
+                                            issue {:fields "id,idReadable,summary,tags(name,id)"}
+                                            {:throw-exceptions false})]
+                     :when (not (:error tags-query-response))
+                     :let [tags (:tags tags-query-response)]
+                     :when (not-any? #(= tag-name (:name %)) tags)]
+                 tags-query-response)]
     (when (not-empty issues)
       (yt-client/yt-request {:key yt-token}
                             :post "commands"
                             {:body (json/write-str {:issues issues
                                                     :query  (str "add tag: " tag-name)})}))
-    (map to-id-and-summary issues)))
+    (not-empty (map to-id-and-summary issues))))
 
-(defn get-all-tagged-issues [yt-token tag-name]
-  (->> (yt-client/issues {:key yt-token} (str "tag: " tag-name))
-       (map to-id-and-summary)))
+(defn get-all-tagged-issues
+  ([yt-token tag-name] (get-all-tagged-issues yt-token tag-name ""))
+  ([yt-token tag-name additional-restrictions]
+   (->> (yt-client/issues {:key yt-token} (str "tag: " tag-name " " additional-restrictions))
+        (map to-id-and-summary)
+        (not-empty))))
 
 (defn update-scheduled-tag [{yt-token :youtrack} body]
   (let [issues (thd/extract-issues-from-html (:text body))
@@ -38,7 +40,9 @@
     {:duplicates     (->> issues (frequencies) (filter (fn [[_ f]] (> f 1))) (map first) (not-empty))
      :issues-added   added
      :issues-missing (let [issues-set (set issues)]
-                       (not-empty (remove #(issues-set (:issue %)) known-scheduled-issues)))}))
+                       (not-empty (remove #(issues-set (:issue %)) known-scheduled-issues)))
+     :issues-foreign (get-all-tagged-issues yt-token tag-name "for: -me for: -Unassigned")
+     :issues-resolved (get-all-tagged-issues yt-token tag-name "#Resolved ")}))
 
 (def handlers
   [{:name      "Sync tag for Issues"
