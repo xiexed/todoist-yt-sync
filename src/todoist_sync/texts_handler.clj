@@ -5,13 +5,11 @@
            ))
 
 
-(def issue-pattern (re-pattern "[A-Z]+-\\d+"))
+(def issue-pattern (re-pattern "[A-Z\\-]+-\\d+"))
 
-(defn extract-issues-id-from-lis [html-text]
+(defn extract-issues-from-html [html-text]
   (let [d (Jsoup/parseBodyFragment html-text)]
-    (->> (.select d "li > span")
-         (mapcat (fn [^Element li] (re-seq issue-pattern (.text li)))))))
-
+    (re-seq issue-pattern (.text d))))
 
 (defn walk-elem [^Node node]
   (condp instance? node

@@ -58,6 +58,13 @@
                 </div>
 
                 <q-select v-model="taskSelected" :options="state['task-options']" label="Task to do"></q-select>
+                <q-expansion-item expand-separator icon="settings" label="Settings" expand-icon-class="text-purple">
+                    <div class="q-tab-panel"
+                         v-if="taskSelected && taskSelected.value === 'ExtractissuesmentionsfromHTML'">
+                        <q-input v-model="settings.separator" label="Separator" stack-label></q-input>
+                        <q-input v-model="settings.prefixes" label="Prefixes" stack-label></q-input>
+                    </div>
+                </q-expansion-item>
                 <q-editor label="Tasks to add" v-model="text" filled type="textarea"></q-editor>
                 <div>
                     <q-btn label="Submit" type="submit" color="primary" :disable="taskSelected == null"></q-btn>
@@ -79,8 +86,8 @@
                             <q-btn flat round dense icon="clear" @click="outputClose(output)"></q-btn>
                         </q-toolbar>
                         <div class="q-pa-md">
-                            <div v-if="output.data.text"> {{ output.data.text }}</div>
-                            <div v-if="output.data['text-out']"><pre @click.native="$event.target.select()"> {{ output.data['text-out'] }}</pre></div>
+                            <div v-if="output.data.text">{{ output.data.text }}</div>
+                            <div v-if="output.data['text-out']"><pre @click.native="$event.target.select()">{{ output.data['text-out'] }}</pre></div>
                             <div v-if="output.data['issues-missing']">Issues not in query, but still has an 'Scheduled'
                                 Tag:
                             </div>
@@ -118,6 +125,10 @@
                     youtrack: false,
                     "task-options": [],
                 },
+                settings: {
+                    separator: " ",
+                    prefixes: "IDEA KT KTIJ",
+                },
                 text: '',
                 tasks: [],
                 taskSelected: null,
@@ -151,6 +162,7 @@
                     },
                     body: JSON.stringify({
                         text: this.text,
+                        settings: this.settings,
                         task: this.taskSelected
                     })
                 }).then(async (res) => {
@@ -167,10 +179,8 @@
                     console.log("post items = ", JSON.stringify(items) );
                     this.outputs.unshift(items)
                 })
-                this.text = '';
             }
         },
-        // ...etc
     })
 </script>
 </body>
