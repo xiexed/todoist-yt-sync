@@ -69,7 +69,7 @@
                         <q-input v-model="settings.tag" label="Tag to Sync" stack-label></q-input>
                     </div>
                 </q-expansion-item>
-                <q-editor label="Tasks to add" v-model="text" filled type="textarea"></q-editor>
+                <q-editor label="Tasks to add" v-model="text" filled type="textarea" max-height="40vh"></q-editor>
                 <div>
                     <q-btn label="Submit" type="submit" color="primary" :disable="taskSelected == null"></q-btn>
                 </div>
@@ -97,31 +97,61 @@
                             </div>
                             <div v-if="output.data['issues-added']">Issues tag was added to
                                 <li v-for="issue in output.data['issues-added']" :key="issue">
-                                    <a target="_blank" rel="noopener noreferrer" :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{ issue.issue
+                                    <a target="_blank" rel="noopener noreferrer"
+                                       :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{ issue.issue
                                         }}</a>
                                     {{ issue.summary }}
                                 </li>
                             </div>
-                            <div v-if="output.data['issues-missing']">Issues not in query, but still has a tag
-                                <li v-for="issue in output.data['issues-missing']" :key="issue">
-                                    <a target="_blank" rel="noopener noreferrer" :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{ issue.issue
-                                        }}</a>
-                                    {{ issue.summary }}
-                                </li>
+                            <div class="q-card q-card--bordered no-shadow" v-if="output.data['issues-missing']">
+                                <q-expansion-item expand-separator
+                                                  :label="'Issues not in query, but still has a tag (' + output.data['issues-missing'].length + ')'"
+                                                  header-class="bg-primary text-white"
+                                                  expand-icon-class="text-white">
+                                    <div style="overflow-y: scroll; max-height: 40vh">
+                                        <li v-for="issue in output.data['issues-missing']" :key="issue">
+                                            <a target="_blank" rel="noopener noreferrer"
+                                               :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{
+                                                issue.issue
+                                                }}</a>
+                                            {{ issue.summary }}
+                                        </li>
+                                    </div>
+                                </q-expansion-item>
                             </div>
-                            <div v-if="output.data['issues-foreign']">Issues not assigned to me
-                                <li v-for="issue in output.data['issues-foreign']" :key="issue">
-                                    <a target="_blank" rel="noopener noreferrer" :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{ issue.issue
-                                        }}</a>
-                                    {{ issue.summary }}
-                                </li>
+                            <div class="q-card q-card--bordered no-shadow" v-if="output.data['issues-foreign']">
+                                <q-expansion-item expand-separator
+                                                  :label="'Issues not assigned to me (' + output.data['issues-foreign'].length + ')'"
+                                                  header-class="bg-primary text-white"
+                                                  expand-icon-class="text-white">
+                                    <q-separator></q-separator>
+                                    <div style="overflow-y: scroll; max-height: 40vh">
+                                        <li v-for="issue in output.data['issues-foreign']" :key="issue">
+                                            <a target="_blank" rel="noopener noreferrer"
+                                               :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{
+                                                issue.issue
+                                                }}</a>
+                                            {{ issue.summary }}
+                                        </li>
+                                    </div>
+                                </q-expansion-item>
                             </div>
-                            <div v-if="output.data['issues-resolved']">Resolved issues, but still has a tag
-                                <li v-for="issue in output.data['issues-resolved']" :key="issue">
-                                    <a target="_blank" rel="noopener noreferrer" :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{ issue.issue
-                                        }}</a>
-                                    {{ issue.summary }}
-                                </li>
+                            <div class="q-card q-card--bordered no-shadow" v-if="output.data['issues-resolved']">
+                                <q-expansion-item expand-separator
+                                                  :label="'Resolved issues, but still has a tag (' + output.data['issues-resolved'].length + ')'"
+                                                  header-class="bg-primary text-white"
+                                                  expand-icon-class="text-white">
+                                    <q-separator></q-separator>
+                                    <div style="overflow-y: scroll; max-height: 40vh">
+                                        <li v-for="issue in output.data['issues-resolved']" :key="issue">
+                                            <a target="_blank" rel="noopener noreferrer"
+                                               :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{
+                                                issue.issue
+                                                }}</a>
+                                            {{ issue.summary }}
+                                        </li>
+                                    </div>
+                                </q-expansion-item>
                             </div>
                             <div v-if="output.data['duplicates']">Issues appears more than once:
                                 <span v-for="issue in output.data['duplicates']" :key="issue">{{ issue }} </span>
