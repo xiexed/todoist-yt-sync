@@ -37,12 +37,16 @@
         tag-name (:tag (:settings body) "in-my-plan")
         added (add-tag-for-issues yt-token issues tag-name)
         known-scheduled-issues (get-all-tagged-issues yt-token tag-name)]
-    {:duplicates     (->> issues (frequencies) (filter (fn [[_ f]] (> f 1))) (map first) (not-empty))
-     :issues-added   added
-     :issues-missing (let [issues-set (set issues)]
-                       (not-empty (remove #(issues-set (:issue %)) known-scheduled-issues)))
-     :issues-foreign (get-all-tagged-issues yt-token tag-name "for: -me for: -Unassigned")
+    {:duplicates      (->> issues (frequencies) (filter (fn [[_ f]] (> f 1))) (map first) (not-empty))
+     :issues-added    added
+     :issues-missing  (let [issues-set (set issues)]
+                        (not-empty (remove #(issues-set (:issue %)) known-scheduled-issues)))
+     :issues-foreign  (get-all-tagged-issues yt-token tag-name "for: -me for: -Unassigned")
      :issues-resolved (get-all-tagged-issues yt-token tag-name "#Resolved ")}))
+
+(defn mk-link [issue-str]
+  (str "<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://youtrack.jetbrains.com/issue/"
+       issue-str "\">" issue-str "</a>"))
 
 (def handlers
   [{:name      "Sync tag for Issues"
@@ -57,11 +61,12 @@
                  (println "settings = " settings)
                  (let [sprts (str/replace (:separator settings " ") "\\n" "\n")
                        prefixes (or (some-> (:prefixes settings) (str/split #"[,\s]+")) [])]
-                   {:text-out (->> (thd/extract-issues-from-html text)
-                                   (filter (fn [entry] (or (empty? prefixes)
-                                                           (some (fn [prefix] (str/starts-with? entry prefix)) prefixes))))
-                                   (sort)
-                                   (str/join sprts))}))}])
+                   {:html (->> (thd/extract-issues-from-html text)
+                               (filter (fn [entry] (or (empty? prefixes)
+                                                       (some (fn [prefix] (str/starts-with? entry prefix)) prefixes))))
+                               (apply sorted-set)
+                               (map mk-link)
+                               (str/join sprts))}))}])
 
 (defn handler-id [{:keys [name]}] (str/replace name #"\s+" ""))
 

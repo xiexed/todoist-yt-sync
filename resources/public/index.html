@@ -91,33 +91,34 @@
                         </q-toolbar>
                         <div class="q-pa-md">
                             <div v-if="output.data.text">{{ output.data.text }}</div>
+                            <div v-if="output.data.html" v-html="output.data.html"></div>
                             <div v-if="output.data['text-out']">
                                 <pre @click.native="$event.target.select()">{{ output.data['text-out'] }}</pre>
                             </div>
                             <div v-if="output.data['issues-added']">Issues tag was added to
                                 <li v-for="issue in output.data['issues-added']" :key="issue">
-                                    <a :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{ issue.issue
+                                    <a target="_blank" rel="noopener noreferrer" :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{ issue.issue
                                         }}</a>
                                     {{ issue.summary }}
                                 </li>
                             </div>
                             <div v-if="output.data['issues-missing']">Issues not in query, but still has a tag
                                 <li v-for="issue in output.data['issues-missing']" :key="issue">
-                                    <a :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{ issue.issue
+                                    <a target="_blank" rel="noopener noreferrer" :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{ issue.issue
                                         }}</a>
                                     {{ issue.summary }}
                                 </li>
                             </div>
                             <div v-if="output.data['issues-foreign']">Issues not assigned to me
                                 <li v-for="issue in output.data['issues-foreign']" :key="issue">
-                                    <a :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{ issue.issue
+                                    <a target="_blank" rel="noopener noreferrer" :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{ issue.issue
                                         }}</a>
                                     {{ issue.summary }}
                                 </li>
                             </div>
                             <div v-if="output.data['issues-resolved']">Resolved issues, but still has a tag
                                 <li v-for="issue in output.data['issues-resolved']" :key="issue">
-                                    <a :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{ issue.issue
+                                    <a target="_blank" rel="noopener noreferrer" :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{ issue.issue
                                         }}</a>
                                     {{ issue.summary }}
                                 </li>
@@ -156,7 +157,7 @@
                     "task-options": [],
                 },
                 settings: {
-                    separator: " ",
+                    separator: ", ",
                     prefixes: "IDEA KT KTIJ",
                     tag: "in-my-plan",
                 },
