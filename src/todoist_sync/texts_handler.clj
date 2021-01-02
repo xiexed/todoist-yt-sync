@@ -2,14 +2,17 @@
   (:require [clojure.string :as str])
   (:import (org.jsoup Jsoup)
            (org.jsoup.nodes Element Node TextNode Attribute)
-           ))
+           (java.util.regex Pattern)))
 
 
-(def issue-pattern (re-pattern "[A-Z\\-]+-\\d+"))
+(def ^Pattern issue-pattern (re-pattern "[A-Z\\-]+-\\d+"))
+
+(def ^String issues-selector (str ":matchesOwn(" (.pattern issue-pattern) ")"))
 
 (defn extract-issues-from-html [html-text]
-  (let [d (Jsoup/parseBodyFragment html-text)]
-    (re-seq issue-pattern (.text d))))
+  (->> (.select (Jsoup/parseBodyFragment html-text) issues-selector)
+       (mapcat (fn [occ] (let [parent-text (.text (.parent occ))]
+                           (map (fn [iss] {:issue iss :input-text parent-text}) (re-seq issue-pattern (.text occ))))))))
 
 (defn walk-elem [^Node node]
   (condp instance? node

@@ -33,16 +33,25 @@
         (not-empty))))
 
 (defn update-scheduled-tag [{yt-token :youtrack} body]
-  (let [issues (thd/extract-issues-from-html (:text body))
+  (let [input-issues-info (thd/extract-issues-from-html (:text body))
+        keep-summaries (let [input-issues-info-map (into {} (map (juxt :issue identity) input-issues-info))]
+                              (fn [id-and-summary-seq]
+                                (->> id-and-summary-seq
+                                     (keep (fn [id-and-summary]
+                                             (when-let [input-text (get-in input-issues-info-map
+                                                                 [(:issue id-and-summary) :input-text])]
+                                               (assoc id-and-summary :summary input-text))))
+                                     (not-empty))))
+        issues (map :issue input-issues-info)
         tag-name (:tag (:settings body) "in-my-plan")
         added (add-tag-for-issues yt-token issues tag-name)
         known-scheduled-issues (get-all-tagged-issues yt-token tag-name)]
     {:duplicates      (->> issues (frequencies) (filter (fn [[_ f]] (> f 1))) (map first) (not-empty))
-     :issues-added    added
+     :issues-added    (keep-summaries added)
      :issues-missing  (let [issues-set (set issues)]
                         (not-empty (remove #(issues-set (:issue %)) known-scheduled-issues)))
-     :issues-foreign  (get-all-tagged-issues yt-token tag-name "for: -me for: -Unassigned")
-     :issues-resolved (get-all-tagged-issues yt-token tag-name "#Resolved ")}))
+     :issues-foreign  (keep-summaries (get-all-tagged-issues yt-token tag-name "for: -me for: -Unassigned"))
+     :issues-resolved (keep-summaries (get-all-tagged-issues yt-token tag-name "#Resolved "))}))
 
 (defn mk-link [issue-str]
   (str "<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://youtrack.jetbrains.com/issue/"
