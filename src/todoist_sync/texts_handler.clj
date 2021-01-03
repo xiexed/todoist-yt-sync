@@ -9,9 +9,21 @@
 
 (def ^String issues-selector (str ":matchesOwn(" (.pattern issue-pattern) ")"))
 
+(defn tag-name [node]
+  (when (instance? Element node) (.tagName ^Element node)))
+
+(defn a-surrounding-text [^Element a]
+  (let [aas (->> a (iterate #(.nextSibling %)) (take-while #(#{"a" "span"} (tag-name %))))]
+    (if (-> (count aas) (> 1))
+      (str/join (map #(.wholeText %) aas))
+      (.text (.parent a)))))
+
 (defn extract-issues-from-html [html-text]
   (->> (.select (Jsoup/parseBodyFragment html-text) issues-selector)
-       (mapcat (fn [occ] (let [parent-text (or (some-> occ (.parents) (.select "a") (.first) (.parent) (.text)) (.text (.parent occ)))]
+       (mapcat (fn [occ] (let [parent-text (or (some-> (filter #(= "a" (tag-name %)) (cons occ (.parents occ)))
+                                                       (first)
+                                                       (a-surrounding-text))
+                                               (.text (.parent occ)))]
                            (map (fn [iss] {:issue iss :input-text parent-text}) (re-seq issue-pattern (.ownText occ))))))))
 
 (defn walk-elem [^Node node]
@@ -36,9 +48,13 @@
                       (cond
                         (= tag "a") (str "[" (to-markdown content) "]" "(" (:href attributes) ")")
                         (= tag "strong") (str "**" (to-markdown content) "**")
-                        (= tag "li") (str "\n  *  " (add-suffix (to-markdown content) "\n") )
-                        (#{"div" "span"} tag) (str (to-markdown content) "\n")
+                        (= tag "li") (str "\n  *  " (add-suffix (to-markdown content) "\n"))
+                        (#{"div" "span" "p"} tag) (str (to-markdown content) "\n")
                         :else (to-markdown content)))
         (seq? node) (str/join (map to-markdown node))
         (nil? node) ""
         :else (throw (IllegalArgumentException. ^String (some-> node (.toString))))))
+
+(defn issue-to-markdown [{:keys [issue input-text]}]
+  (str/replace input-text issue (str "[" issue "](https://youtrack.jetbrains.com/issue/" issue ")"))
+  )
