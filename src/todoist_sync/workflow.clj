@@ -58,9 +58,22 @@
   (str "<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://youtrack.jetbrains.com/issue/"
        issue-str "\">" issue-str "</a>"))
 
+
+(defn issue-to-markdown-and-type [{:keys [issue input-text]}]
+  (let [{:keys [url td-type]}
+        (or (when-let [[_ rid num] (re-matches #"(\w+)-CR-(\d+)" issue)]
+              {:url     (if (#{"KT" "IJ"} rid)
+                          (str "https://jetbrains.team/p/" rid "/review/" num "/timeline")
+                          (str "https://upsource.jetbrains.com/intellij/review/" issue))
+               :td-type :review})
+            {:url     (str "https://youtrack.jetbrains.com/issue/" issue "")
+             :td-type :ticket})]
+    {:md-string (str/replace input-text issue (str "[" issue "](" url ")"))
+     :td-type   td-type}))
+
 (defn post-to-todoist [{token :todoist} {:keys [settings text]}]
-  (let [issue-mds (map thd/issue-to-markdown (thd/extract-issues-from-html text))]
-    (doseq [issue issue-mds] @(td/post-as-issue token issue))
+  (let [issue-mds (map :md-string (map issue-to-markdown-and-type (thd/extract-issues-from-html text)))]
+    (doseq [issue issue-mds] @(td/post-as-issue token (issue)))
     {:text-out (str/join "\n" issue-mds)}))
 
 (def handlers

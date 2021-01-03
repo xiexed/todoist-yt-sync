@@ -54,7 +54,3 @@
         (seq? node) (str/join (map to-markdown node))
         (nil? node) ""
         :else (throw (IllegalArgumentException. ^String (some-> node (.toString))))))
-
-(defn issue-to-markdown [{:keys [issue input-text]}]
-  (str/replace input-text issue (str "[" issue "](https://youtrack.jetbrains.com/issue/" issue ")"))
-  )
