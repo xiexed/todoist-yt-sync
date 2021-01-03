@@ -1,5 +1,6 @@
 (ns todoist-sync.workflow
   (:require [todoist-sync.yt-client :as yt-client]
+            [todoist-sync.todoist :as td]
             [todoist-sync.texts-handler :as thd]
             [clojure.data.json :as json]
             [clojure.string :as str]))
@@ -57,6 +58,11 @@
   (str "<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://youtrack.jetbrains.com/issue/"
        issue-str "\">" issue-str "</a>"))
 
+(defn post-to-todoist [{token :todoist} {:keys [settings text]}]
+  (let [issue-mds (map thd/issue-to-markdown (thd/extract-issues-from-html text))]
+    (doseq [issue issue-mds] @(td/post-as-issue token issue))
+    {:text-out (str/join "\n" issue-mds)}))
+
 (def handlers
   [{:name      "Sync tag for Issues"
     :available #(:youtrack %)
@@ -75,7 +81,10 @@
                                                        (some (fn [prefix] (str/starts-with? entry prefix)) prefixes))))
                                (apply sorted-set)
                                (map mk-link)
-                               (str/join sprts))}))}])
+                               (str/join sprts))}))}
+   {:name      "Post tasks to Todoist"
+    :available #(:todoist %)
+    :handler   post-to-todoist}])
 
 (defn handler-id [{:keys [name]}] (str/replace name #"\s+" ""))
 

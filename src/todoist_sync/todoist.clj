@@ -4,7 +4,9 @@
             [clojure.edn :as edn]
             [promesa.core :as p])
   (:import (com.github.benmanes.caffeine.cache Caffeine CacheLoader)
-           (java.util.concurrent TimeUnit)))
+           (java.util.concurrent TimeUnit)
+           (java.time LocalDate)
+           (java.time.format DateTimeFormatter)))
 
 (def token-agents (-> (Caffeine/newBuilder)
                       (.expireAfterAccess 8 TimeUnit/HOURS)
@@ -24,18 +26,24 @@
                   (catch Exception e (reject e)))))
         (catch Exception e (reject e))))))
 
-(defn post-task [token text]
+(defn post-task [token data]
   (updating-state-off token
                       (fn [a]
                         (let [b (-> (client/get "https://api.todoist.com/sync/v8/sync"
                                                 {:query-params
-                                                 {"token" token,
-                                                  "commands" (json/write-str
-                                                               [{:type "item_add",
-                                                                 :args {:content text,
-                                                                        :project_id 2246332511, :section_id 26579827},
-                                                                 :temp_id (.toString (java.util.UUID/randomUUID))
-                                                                 :uuid (.toString (java.util.UUID/randomUUID))
-                                                                 }] )}})
-                                    (update :body json/read-json))]
+                                                         {"token"    token,
+                                                          "commands" (json/write-str
+                                                                       [{:type    "item_add",
+                                                                         :args    data,
+                                                                         :temp_id (.toString (java.util.UUID/randomUUID))
+                                                                         :uuid    (.toString (java.util.UUID/randomUUID))
+                                                                         }])}
+                                                 :accept :json, :as :json}))]
                           [a b]))))
+
+(defn post-as-issue [token md-text]
+  (let [today (.format (LocalDate/now) (DateTimeFormatter/ISO_LOCAL_DATE))]
+    (post-task token {:content    md-text,
+                      :project_id 2246332511, :section_id 26579827
+                      :due        {:date today}
+                      :priority   2})))
