@@ -59,21 +59,29 @@
        issue-str "\">" issue-str "</a>"))
 
 
-(defn issue-to-markdown-and-type [{:keys [issue input-text]}]
-  (let [{:keys [url td-type]}
-        (or (when-let [[_ rid num] (re-matches #"(\w+)-CR-(\d+)" issue)]
-              {:url     (if (#{"KT" "IJ"} rid)
-                          (str "https://jetbrains.team/p/" rid "/review/" num "/timeline")
-                          (str "https://upsource.jetbrains.com/intellij/review/" issue))
-               :td-type :review})
-            {:url     (str "https://youtrack.jetbrains.com/issue/" issue "")
-             :td-type :ticket})]
-    {:md-string (str/replace input-text issue (str "[" issue "](" url ")"))
-     :td-type   td-type}))
+(defn issue-type-and-url [issue-str]
+  (or (when-let [[_ rid num] (re-matches #"(\w+)-CR-(\d+)" issue-str)]
+        {:url     (if (#{"KT" "IJ"} rid)
+                    (str "https://jetbrains.team/p/" rid "/review/" num "/timeline")
+                    (str "https://upsource.jetbrains.com/intellij/review/" issue-str))
+         :td-type :review})
+      {:url     (str "https://youtrack.jetbrains.com/issue/" issue-str "")
+       :td-type :ticket}))
+
+(defn issue-to-markdown-and-type [{:keys [issue url td-type input-text]}]
+  {:md-string (str/replace input-text issue (str "[" issue "](" url ")"))
+   :td-type   td-type})
+
+(defn classify-with-review-preference [extracted-issues]
+  (->> extracted-issues
+       (map (fn [issue] (merge issue (issue-type-and-url (:issue issue)))))
+       (group-by :input-text)
+       (vals)
+       (mapcat (fn [gr] (or (not-empty (filter #(= :review (:td-type %)) gr)) gr)))))
 
 (defn post-to-todoist [{token :todoist} {:keys [settings text]}]
-  (let [issue-mds (map :md-string (map issue-to-markdown-and-type (thd/extract-issues-from-html text)))]
-    (doseq [issue issue-mds] @(td/post-as-issue token (issue)))
+  (let [issue-mds (map :md-string (map issue-to-markdown-and-type (classify-with-review-preference (thd/extract-issues-from-html text))))]
+    (doseq [issue issue-mds] @(td/post-as-issue token issue))
     {:text-out (str/join "\n" issue-mds)}))
 
 (def handlers
