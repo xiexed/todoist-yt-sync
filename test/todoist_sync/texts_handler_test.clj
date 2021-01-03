@@ -69,8 +69,6 @@
     (is (= (list {:input-text "IDEA-236513 Implement `isReferenceTo` and `canResolveTo` for better part of PomTarget-references in Ultimate frameworks"
                   :issue      "IDEA-236513"}
                  {:input-text "IDEA-252443 [Upsource] Discussion in review IDEA-CR-62253"
-                  :issue      "IDEA-252443"}
-                 {:input-text "IDEA-252443 [Upsource] Discussion in review IDEA-CR-62253"
                   :issue      "IDEA-CR-62253"}
                  {:input-text "IDEA-252443 [Upsource] Discussion in review IDEA-CR-62253"
                   :issue      "IDEA-252443"})
@@ -89,4 +87,12 @@
            (extract-issues-from-html "KT-21297 Injected fragment editor doesn't know how to escape $ in raw strings
  IDEA-257015 Edit RegExp fragment doesn't escape a literal dollar symbol in Kotlin #notmy
  KTIJ-176 Edit json fragment for injected language removes escape for dollar sign"
+                                     )))
+    (is (= (list {:input-text "IDEA-236513 Implement `isReferenceTo` and `canResolveTo` for better part of PomTarget-references in Ultimate frameworks"
+                  :issue      "IDEA-236513"}
+                 {:input-text "IDEA-252443 [Upsource] Discussion in review IDEA-CR-62253"
+                  :issue      "IDEA-CR-62253"}
+                 {:input-text "IDEA-252443 [Upsource] Discussion in review IDEA-CR-62253"
+                  :issue      "IDEA-252443"})
+           (extract-issues-from-html "<span class=\"name\" style=\"font-size: 16px; margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; white-space: pre-wrap; line-height: 21px; caret-color: rgb(51, 51, 51); color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Arial, sans-serif;\"><span class=\"innerContentContainer\" style=\"margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline;\">Infra</span></span><ul style=\"margin: 15px 0px 0px; padding: 0px; border: 0px; outline: 0px; font-size: 13px; vertical-align: baseline; list-style-position: initial; list-style-image: initial; caret-color: rgb(51, 51, 51); color: rgb(51, 51, 51); font-family: &quot;Helvetica Neue&quot;, Arial, sans-serif;\"><li style=\"margin: 4px 0px 4px 20px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline;\"><span class=\"name\" style=\"margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; white-space: pre-wrap;\"><a class=\"contentLink\" target=\"_blank\" rel=\"noreferrer\" href=\"https://youtrack.jetbrains.com/issue/IDEA-236513\" style=\"margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; text-decoration: none; color: inherit; cursor: pointer;\">IDEA-236513</a>&nbsp;Implement `isReferenceTo` and `canResolveTo` for better part of PomTarget-references in Ultimate frameworks</span></li><li style=\"margin: 4px 0px 4px 20px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline;\"><span class=\"name\" style=\"margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; white-space: pre-wrap;\"><a class=\"contentLink\" target=\"_blank\" rel=\"noreferrer\" href=\"https://youtrack.jetbrains.com/issue/IDEA-252443\" style=\"margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline; text-decoration: none; color: inherit; cursor: pointer;\"><span class=\"contentMatch\" style=\"margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: baseline;\">IDEA-252443</span></a>&nbsp;[Upsource] Discussion in review IDEA-CR-62253</span></li></ul>"
                                      )))))

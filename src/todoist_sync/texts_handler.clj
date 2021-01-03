@@ -11,8 +11,8 @@
 
 (defn extract-issues-from-html [html-text]
   (->> (.select (Jsoup/parseBodyFragment html-text) issues-selector)
-       (mapcat (fn [occ] (let [parent-text (.text (.parent occ))]
-                           (map (fn [iss] {:issue iss :input-text parent-text}) (re-seq issue-pattern (.text occ))))))))
+       (mapcat (fn [occ] (let [parent-text (or (some-> occ (.parents) (.select "a") (.first) (.parent) (.text)) (.text (.parent occ)))]
+                           (map (fn [iss] {:issue iss :input-text parent-text}) (re-seq issue-pattern (.ownText occ))))))))
 
 (defn walk-elem [^Node node]
   (condp instance? node
