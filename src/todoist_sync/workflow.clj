@@ -80,9 +80,9 @@
        (mapcat (fn [gr] (or (not-empty (filter #(= :review (:td-type %)) gr)) gr)))))
 
 (defn post-to-todoist [{token :todoist} {:keys [settings text]}]
-  (let [issue-mds (map :md-string (map issue-to-markdown-and-type (classify-with-review-preference (thd/extract-issues-from-html text))))]
-    (doseq [issue issue-mds] @(td/post-as-issue token issue))
-    {:text-out (str/join "\n" issue-mds)}))
+  (let [issue-info (map issue-to-markdown-and-type (classify-with-review-preference (thd/extract-issues-from-html text)))]
+    (doseq [issue issue-info] @(td/post-as-issue token issue))
+    {:text-out (str/join "\n" (map :md-string issue-info))}))
 
 (def handlers
   [{:name      "Sync tag for Issues"

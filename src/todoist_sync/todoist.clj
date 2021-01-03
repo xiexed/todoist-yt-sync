@@ -20,11 +20,19 @@
     (fn [resolve reject]
       (try
         (send-off (.get token-agents token)
-              (fn [agent-state]
-                (try
-                  (let [[new-state result] (f agent-state)] (resolve result) new-state)
-                  (catch Exception e (reject e)))))
+                  (fn [agent-state]
+                    (try
+                      (let [[new-state result] (f agent-state)] (resolve result) new-state)
+                      (catch Exception e (reject e)))))
         (catch Exception e (reject e))))))
+
+(defn get-in-sync [token]
+  (client/get "https://api.todoist.com/sync/v8/sync"
+              {:query-params
+                       {"token"          token,
+                        "sync_token"     "*"
+                        "resource_types" (json/write-str ["sections"])}
+               :accept :json, :as :json}))
 
 (defn post-task [token data]
   (updating-state-off token
@@ -41,9 +49,14 @@
                                                  :accept :json, :as :json}))]
                           [a b]))))
 
-(defn post-as-issue [token md-text]
-  (let [today (.format (LocalDate/now) (DateTimeFormatter/ISO_LOCAL_DATE))]
-    (post-task token {:content    md-text,
-                      :project_id 2246332511, :section_id 26579827
+(def issue-publishing-data
+  {:ticket {:project_id 2246332511, :section_id 26579827, :priority 2}
+   :review {:project_id 2246332511, :section_id 26572945, :priority 3}})
+
+(defn post-as-issue [token issue-info]
+  (let [today (.format (LocalDate/now) (DateTimeFormatter/ISO_LOCAL_DATE))
+        type-data (issue-publishing-data (:td-type issue-info))]
+    (post-task token {:content    (:md-string issue-info),
+                      :project_id (:project_id type-data), :section_id (:section_id type-data)
                       :due        {:date today}
-                      :priority   2})))
+                      :priority   (:priority type-data)})))
