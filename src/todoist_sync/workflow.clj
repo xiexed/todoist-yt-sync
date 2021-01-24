@@ -107,7 +107,6 @@
    {:name      "Extract issues mentions from HTML"
     :available (constantly true)
     :handler   (fn [_ {:keys [settings text]}]
-                 (println "settings = " settings)
                  (let [sprts (str/replace (:separator settings " ") "\\n" "\n")
                        prefixes (or (some-> (:prefixes settings) (str/split #"[,\s]+")) [])]
                    {:html (->> (thd/extract-issues-from-html text)

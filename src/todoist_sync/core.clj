@@ -51,12 +51,10 @@
                                    (merge (->> tokens (map (fn [[k v]] [k (some? v)])) (into {}))
                                           {:task-options (workflow/handlers-available tokens)}))))
                  (POST "/do-task" request
-                   (println "do-task-body" (request :body))
                    (reset! last-sent-text (:text (request :body)))
                    (let [task-id (get-in request [:body :task :value])]
                      (if-let [h (workflow/handler-by-id task-id)]
                        (let [value (h (tokens request) (:body request))]
-                         (println "resp = " value)
                          (rur/response value))
                        (rur/bad-request (str "No task " task-id))))))
                (wrap-json-response)
@@ -68,14 +66,11 @@
            json-api
            (POST "/post-task" [text :as request]
              (let [token (get-in request [:oauth2/access-tokens :todoist :token])]
-               (println "data = " text "token = " token)
-               (println @(tdst/post-task token text))
+               @(tdst/post-task token text)
                (rur/redirect "/" :see-other)))
            (route/not-found "<h1>Not Found</h1>"))
 
 (defonce session-atom (atom {}))
-
-
 
 (defn wrap-sync [next-handler sync-handler-to-wrap]
   (let [fix-request (fn [request]
