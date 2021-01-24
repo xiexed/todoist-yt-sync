@@ -74,16 +74,23 @@
       {:url     (str "https://youtrack.jetbrains.com/issue/" issue-str "")
        :td-type :ticket}))
 
-(defn issue-to-markdown-and-type [{:keys [issue url td-type input-text]}]
-  {:md-string (str/replace input-text issue (str "[" issue "](" url ")"))
-   :td-type   td-type})
+(defn issue-to-markdown-and-type [issue]
+  {:md-string (reduce (fn [input-text {:keys [issue url]}] (str/replace input-text issue (str "[" issue "](" url ")")))
+                      (issue :input-text)
+                      (cons issue (:others issue)))
+   :td-type   (:td-type issue)})
 
 (defn classify-with-review-preference [extracted-issues]
   (->> extracted-issues
        (map (fn [issue] (merge issue (issue-type-and-url (:issue issue)))))
        (group-by :input-text)
        (vals)
-       (mapcat (fn [gr] (or (not-empty (filter #(= :review (:td-type %)) gr)) gr)))))
+       (map (fn [gr]
+                 (let [[head & others] (let [has-preference #(= :review (:td-type %))]
+                                         (concat (filter has-preference gr) (remove has-preference gr)))]
+                   (if (not-empty others)
+                     (assoc head :others (map #(select-keys % [:issue :url]) others))
+                     head))))))
 
 (defn post-to-todoist [{token :todoist} {:keys [settings text]}]
   (let [issue-info (map issue-to-markdown-and-type (classify-with-review-preference (thd/extract-issues-from-html text)))]
