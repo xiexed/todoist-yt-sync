@@ -116,6 +116,7 @@
                                            :launch-uri       "/oauth2/hub"
                                            :redirect-uri     "/oauth2/hub/callback"
                                            :landing-uri      "/"}}))
-              (wrap-session {:store (ses-mem/memory-store session-atom)})
+              (wrap-session {:store        (ses-mem/memory-store session-atom)
+                             :cookie-attrs {:max-age (* 60 60 24 30)}})
               (wrap-cookies)
               (wrap-params))))
