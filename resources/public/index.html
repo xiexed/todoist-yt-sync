@@ -111,6 +111,23 @@
                                 </div>
                             </q-expansion-item>
                         </div>
+                        <div class="q-card q-card--bordered no-shadow" v-if="output.data['not-added-because-resolved']">
+                            <q-expansion-item expand-separator
+                                              :label="'Tag was not added because issue is resolved (' + output.data['not-added-because-resolved'].length + ')'"
+                                              header-class="bg-primary text-white"
+                                              expand-icon-class="text-white">
+                                <q-separator></q-separator>
+                                <div style="overflow-y: scroll; max-height: 40vh">
+                                    <li v-for="issue in output.data['not-added-because-resolved']" :key="issue">
+                                        <a target="_blank" rel="noopener noreferrer"
+                                           :href="'https://youtrack.jetbrains.com/issue/' + issue.issue ">{{
+                                            issue.issue
+                                            }}</a>
+                                        {{ issue.summary }}
+                                    </li>
+                                </div>
+                            </q-expansion-item>
+                        </div>
                         <div v-if="output.data['duplicates']">Issues appears more than once:
                             <span v-for="issue in output.data['duplicates']" :key="issue">{{ issue }} </span>
                         </div>
