@@ -1,6 +1,6 @@
 # todoist-sync
 
-A Clojure library designed to ... well, that part is up to you.
+Todoist, Youtrack and Workflowy integration for my task management.
 
 ## Usage
 
