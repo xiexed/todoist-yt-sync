@@ -27,7 +27,7 @@ Or deploy to production from ansible folder
 
 Getting from session
 ```clojure
-(def yt-token (->> (deref session-atom) (vals) (first) (:ring.middleware.oauth2/access-tokens) (:youtrack) (:token)))
+(def my-yt-token (->> (deref session-atom) (vals) (first) (:ring.middleware.oauth2/access-tokens) (:youtrack) (:token)))
 ```
 
 ## License

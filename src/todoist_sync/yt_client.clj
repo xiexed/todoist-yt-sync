@@ -35,7 +35,13 @@
   ([conf query y-params]
    (issues conf query y-params {}))
   ([conf query {:keys [fields]} req-params]
-   (get-from-yt conf "issues" {:fields (or fields *default-issue-fields*) :$top 500 :query query} req-params)))
+   ((fn cons-load [skip]
+      (let [chunk-size 500
+            chunk (get-from-yt conf "issues" {:fields (or fields *default-issue-fields*) :$skip skip :$top chunk-size :query query} req-params)]
+        (if (< (count chunk) chunk-size)
+          chunk
+          (concat chunk (lazy-seq (cons-load (+ skip chunk-size)))))))
+    0)))
 
 (defn issue
   ([conf id] (issue conf id {}))

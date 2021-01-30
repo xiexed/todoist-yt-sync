@@ -16,7 +16,8 @@
                  [funcool/promesa "6.0.0"]
                  [com.github.ben-manes.caffeine/caffeine "2.8.6"]
                  [com.typesafe/config "1.4.1"]
-                 [org.jsoup/jsoup "1.13.1"]]
+                 [org.jsoup/jsoup "1.13.1"]
+                 [clojure.java-time "0.3.2"]]
   :plugins [[lein-ring "0.12.5"]]
   :ring {:handler todoist-sync.core/app}
   :repl-options {:init-ns todoist-sync.core})
