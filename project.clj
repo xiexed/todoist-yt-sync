@@ -17,7 +17,9 @@
                  [com.github.ben-manes.caffeine/caffeine "2.8.6"]
                  [com.typesafe/config "1.4.1"]
                  [org.jsoup/jsoup "1.13.1"]
-                 [clojure.java-time "0.3.2"]]
+                 [clojure.java-time "0.3.2"]
+                 [seancorfield/next.jdbc "1.1.613"]
+                 [org.postgresql/postgresql "42.2.18"]]
   :plugins [[lein-ring "0.12.5"]]
   :ring {:handler todoist-sync.core/app}
   :repl-options {:init-ns todoist-sync.core})
