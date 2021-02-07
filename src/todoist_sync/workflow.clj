@@ -113,6 +113,7 @@
                  (let [sprts (str/replace (:separator settings " ") "\\n" "\n")
                        prefixes (or (some-> (:prefixes settings) (str/split #"[,\s]+")) [])]
                    {:html (->> (thd/extract-issues-from-html text)
+                               (map :issue)
                                (filter (fn [entry] (or (empty? prefixes)
                                                        (some (fn [prefix] (str/starts-with? entry prefix)) prefixes))))
                                (apply sorted-set)
