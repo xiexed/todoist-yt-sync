@@ -25,13 +25,19 @@
       (str/join (map whole-text aas))
       (.text (.parent a)))))
 
-(defn extract-issues-from-html [html-text]
-  (->> (.select (Jsoup/parseBodyFragment html-text) issues-selector)
-       (mapcat (fn [occ] (let [parent-text (or (some-> (filter #(= "a" (tag-name %)) (cons occ (.parents occ)))
-                                                       (first)
-                                                       (a-surrounding-text))
-                                               (.text (.parent occ)))]
-                           (map (fn [iss] {:issue iss :input-text parent-text}) (re-seq issue-pattern (.ownText occ))))))))
+(defn extract-issues-from-html
+  ([html-text {:keys [single-task], :or {single-task false}, :as settings}]
+   (let [make-entries-seq (fn [parent-text occ] (map (fn [iss] {:issue iss :input-text parent-text}) (re-seq issue-pattern occ)))]
+     (if single-task
+       (let [text (.text (Jsoup/parseBodyFragment html-text))]
+         (make-entries-seq text text))
+       (->> (.select (Jsoup/parseBodyFragment html-text) issues-selector)
+           (mapcat (fn [occ] (let [parent-text (or (some-> (filter #(= "a" (tag-name %)) (cons occ (.parents occ)))
+                                                           (first)
+                                                           (a-surrounding-text))
+                                                   (.text (.parent occ)))]
+                               (make-entries-seq parent-text (.ownText occ)))))))))
+  ([html-text] (extract-issues-from-html html-text {})))
 
 (defn walk-elem [^Node node]
   (condp instance? node

@@ -170,6 +170,10 @@
                                  v-if="taskSelected && taskSelected.value === 'SynctagforIssues'">
                                 <q-input v-model="settings.tag" label="Tag to Sync" stack-label></q-input>
                             </div>
+                            <div class="q-tab-panel"
+                                 v-if="taskSelected && taskSelected.value === 'PosttaskstoTodoist'">
+                                <q-checkbox v-model="settings['single-task']" label="Send as single task" stack-label></q-checkbox>
+                            </div>
                         </q-expansion-item>
                         <q-editor label="Tasks to add" v-model="text" filled type="textarea"
                                   max-height="40vh"></q-editor>
@@ -211,6 +215,7 @@
                     separator: ", ",
                     prefixes: "IDEA KT KTIJ",
                     tag: "in-my-plan",
+                    "single-task": true
                 },
                 text: '',
                 tasks: [],

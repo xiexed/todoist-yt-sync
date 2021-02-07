@@ -96,7 +96,7 @@
                      head))))))
 
 (defn post-to-todoist [{token :todoist} {:keys [settings text]}]
-  (let [issue-info (map issue-to-markdown-and-type (classify-with-review-preference (thd/extract-issues-from-html text)))]
+  (let [issue-info (map issue-to-markdown-and-type (classify-with-review-preference (thd/extract-issues-from-html text settings)))]
     (doseq [issue issue-info] @(td/post-as-issue token issue))
     {:text-out (str/join "\n" (map :md-string issue-info))}))
 
