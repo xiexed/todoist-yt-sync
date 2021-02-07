@@ -12,10 +12,17 @@
 (defn tag-name [node]
   (when (instance? Element node) (.tagName ^Element node)))
 
+(defn whole-text [node]
+  (condp instance? node
+    Element (.wholeText ^Element node)
+    TextNode (.text ^TextNode node)))
+
 (defn a-surrounding-text [^Element a]
-  (let [aas (->> a (iterate #(.nextSibling %)) (take-while #(#{"a" "span"} (tag-name %))))]
+  (let [nexts (->> a (iterate #(.nextSibling %)) (take-while #(#{"a" "span"} (tag-name %))))
+        prevs (->> a (iterate #(.previousSibling %)) (drop 1) (take-while some?) (take-while #(nil? (tag-name %))) (reverse))
+        aas (concat prevs nexts)]
     (if (-> (count aas) (> 1))
-      (str/join (map #(.wholeText %) aas))
+      (str/join (map whole-text aas))
       (.text (.parent a)))))
 
 (defn extract-issues-from-html [html-text]
