@@ -71,6 +71,9 @@
                     (str "https://jetbrains.team/p/" rid "/review/" num "/timeline")
                     (str "https://upsource.jetbrains.com/intellij/review/" issue-str))
          :td-type :review})
+      (when-let [[_ num] (re-matches #"EA-(\d+)" issue-str)]
+        {:url     (str "https://ea.jetbrains.com/browser/ea_problems/" num)
+         :td-type :ea})
       {:url     (str "https://youtrack.jetbrains.com/issue/" issue-str "")
        :td-type :ticket}))
 

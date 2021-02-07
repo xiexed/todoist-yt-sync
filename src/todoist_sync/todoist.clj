@@ -3,17 +3,16 @@
             [clojure.data.json :as json]
             [clojure.edn :as edn]
             [promesa.core :as p])
-  (:import (com.github.benmanes.caffeine.cache Caffeine CacheLoader)
+  (:import (com.github.benmanes.caffeine.cache Caffeine CacheLoader LoadingCache)
            (java.util.concurrent TimeUnit)
            (java.time LocalDate)
            (java.time.format DateTimeFormatter)))
 
-(def token-agents (-> (Caffeine/newBuilder)
-                      (.expireAfterAccess 8 TimeUnit/HOURS)
-                      (.build (reify CacheLoader
+(def ^LoadingCache token-agents (-> (Caffeine/newBuilder)
+                                    (.expireAfterAccess 8 TimeUnit/HOURS)
+                                    (.build (reify CacheLoader
                                 (load [_ token]
-                                  (agent {:token token})
-                                  )))))
+                                  (agent {:token token}))))))
 
 (defn updating-state-off [token f]
   (p/create
@@ -51,6 +50,7 @@
 
 (def issue-publishing-data
   {:ticket {:project_id 2246332511, :section_id 26579827, :priority 2}
+   :ea {:project_id 2246332511, :section_id 26579827, :priority 2}
    :review {:project_id 2246332511, :section_id 26572945, :priority 3}})
 
 (defn post-as-issue [token issue-info]

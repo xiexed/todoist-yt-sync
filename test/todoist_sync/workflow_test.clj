@@ -58,3 +58,18 @@
            (map wf/issue-to-markdown-and-type (wf/classify-with-review-preference (thd/extract-issues-from-html "<font color=\"#0F5B99\"><a href=\"https://upsource.jetbrains.com/intellij/review/IDEA-CR-70134\"><b><span style=\"font-size: 16px;\">IDEA-CR-70134</span></b><span style=\"font-size: 16px;\">: Review of aizmaylov/IDEA-137125-ssl-http-client branch</span></a></font><span style=\"font-size: 16px;\"><font color=\"#0F5B99\"></font><font color=\"#444444\"></font></span><div><a href=\"https://upsource.jetbrains.com/intellij/review/IDEA-CR-69986\"><font color=\"#0F5B99\"><b><span style=\"font-size: 16px;\">IDEA-CR-69986</span></b><span style=\"font-size: 16px;\">: IDEA-212875 Restrict cases for insertion with indents adjusted and improve it</span></font></a><br></div>"
                                                                                                                 )))
            ))))
+
+(deftest test-parse-exceptions
+  (testing "Testing exceptinos parsed"
+    (is (= (list {:md-string "[EA-235440](https://ea.jetbrains.com/browser/ea_problems/235440) - IAE: TextRange.<init> [in-my-plan]"
+                  :td-type   :ea})
+           (map wf/issue-to-markdown-and-type
+                (wf/classify-with-review-preference
+                  (thd/extract-issues-from-html "<a class=\"contentLink\" target=\"_blank\" rel=\"noreferrer\" href=\"http://ea.jetbrains.com/browser/ea_problems/235440\" style=\"margin: 0px; padding: 0px; border: 0px; outline: 0px; font-size: 14.000000953674316px; vertical-align: baseline; color: rgb(75, 173, 223); cursor: pointer; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, Helvetica, Arial, sans-serif, &quot;Apple Color Emoji&quot;, &quot;Segoe UI Emoji&quot;, &quot;Segoe UI Symbol&quot;; white-space: pre-wrap;\">EA-235440</a><span style=\"caret-color: rgb(42, 49, 53); color: rgb(42, 49, 53); font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, Helvetica, Arial, sans-serif, &quot;Apple Color Emoji&quot;, &quot;Segoe UI Emoji&quot;, &quot;Segoe UI Symbol&quot;; font-size: 14.000000953674316px; white-space: pre-wrap;\"> - IAE: TextRange.&lt;init&gt; [in-my-plan]</span>"
+                                                )))))
+    (is (= (list {:md-string "[EA-235440](https://ea.jetbrains.com/browser/ea_problems/235440) - IAE: TextRange.<init> [in-my-plan]"
+                  :td-type   :ea})
+           (map wf/issue-to-markdown-and-type
+                (wf/classify-with-review-preference
+                  (thd/extract-issues-from-html "<span style=\"\">EA-235440 - IAE: TextRange.&lt;init&gt; [in-my-plan]</span>"
+                                                )))))))
