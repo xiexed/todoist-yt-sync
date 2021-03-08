@@ -55,6 +55,13 @@
 
 (defn add-suffix [s suffix] (if (str/ends-with? s suffix) s (str s suffix)))
 
+(defn nodes-seq [node]
+  (cond (string? node) (list node)
+        (map? node) (cons node (mapcat nodes-seq (:content node)))
+        (seq? node) (mapcat nodes-seq node)
+        (nil? node) nil
+        :else (throw (IllegalArgumentException. ^String (some-> node (.toString))))))
+
 (defn to-markdown [node]
   (cond (string? node) node
         (map? node) (let [{:keys [tag attributes content]} node]

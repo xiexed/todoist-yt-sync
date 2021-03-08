@@ -3,7 +3,9 @@
             [todoist-sync.todoist :as td]
             [todoist-sync.texts-handler :as thd]
             [clojure.data.json :as json]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clojure.set :as set])
+  (:import (java.net URL)))
 
 (defn to-id-and-summary [resp]
   {:issue   (or (:idReadable resp) (str (get-in resp [:project :shortName]) "-" (:numberInProject resp)))
@@ -89,16 +91,29 @@
        (group-by :input-text)
        (vals)
        (map (fn [gr]
-                 (let [[head & others] (let [has-preference #(= :review (:td-type %))]
-                                         (concat (filter has-preference gr) (remove has-preference gr)))]
-                   (if (not-empty others)
-                     (assoc head :others (map #(select-keys % [:issue :url]) others))
-                     head))))))
+              (let [[head & others] (let [has-preference #(= :review (:td-type %))]
+                                      (concat (filter has-preference gr) (remove has-preference gr)))]
+                (if (not-empty others)
+                  (assoc head :others (map #(select-keys % [:issue :url]) others))
+                  head))))))
+
+(def domains-to-read #{"jetbrains.team" "medium.com" "republic.ru"})
+
+(defn- extract-by-domain [text]
+  (let [parsed-html (thd/parse-html-text text)
+        domains (->> (thd/nodes-seq parsed-html)
+                     (keep (fn [n] (:href (:attributes n))))
+                     (map (fn [url] (.getHost (URL. url))))
+                     (into #{}))]
+    (list {:md-string (thd/to-markdown parsed-html)
+           :td-type   (if (not-empty (set/intersection domains domains-to-read)) :to-read nil)})))
 
 (defn post-to-todoist [{token :todoist} {:keys [settings text]}]
-  (let [issue-info (map issue-to-markdown-and-type (classify-with-review-preference (thd/extract-issues-from-html text settings)))]
-    (doseq [issue issue-info] @(td/post-as-issue token issue))
-    {:text-out (str/join "\n" (map :md-string issue-info))}))
+  (let [issue-infos (or (not-empty
+                          (map issue-to-markdown-and-type (classify-with-review-preference (thd/extract-issues-from-html text settings))))
+                        (extract-by-domain text))]
+    (doseq [issue issue-infos] @(td/post-as-issue token issue))
+    {:text-out (str/join "\n" (map :md-string issue-infos))}))
 
 (def handlers
   [{:name      "Sync tag for Issues"

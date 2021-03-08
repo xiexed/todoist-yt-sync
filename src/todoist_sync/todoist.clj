@@ -51,12 +51,13 @@
 (def issue-publishing-data
   {:ticket {:project_id 2246332511, :section_id 26579827, :priority 2}
    :ea {:project_id 2246332511, :section_id 26579827, :priority 2}
-   :review {:project_id 2246332511, :section_id 26572945, :priority 3}})
+   :review {:project_id 2246332511, :section_id 26572945, :priority 3}
+   :to-read {:project_id 2250955014, :no-date true}})
 
 (defn post-as-issue [token issue-info]
   (let [today (.format (LocalDate/now) (DateTimeFormatter/ISO_LOCAL_DATE))
         type-data (issue-publishing-data (:td-type issue-info))]
     (post-task token {:content    (:md-string issue-info),
                       :project_id (:project_id type-data), :section_id (:section_id type-data)
-                      :due        {:date today}
+                      :due        (when-not (:no-date type-data false) {:date today})
                       :priority   (:priority type-data)})))
