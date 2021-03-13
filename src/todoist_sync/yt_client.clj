@@ -57,6 +57,9 @@
                 (merge params {:fields (or fields "author(name),field(name),added(name),removed(name)")
                                :categories (or categories "CustomFieldCategory")}))))
 
+(defn me [yt-token]
+  (get-from-yt {:key yt-token} "/users/me" {:fields ["id,login,ringId"]}))
+
 (defn issue-links [conf id]
   (get-from-yt conf (str "issues/" id "/links") {:fields "direction,linkType(name),issues(id,numberInProject,project(shortName),summary)"}))
 
