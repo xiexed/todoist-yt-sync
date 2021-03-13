@@ -1,7 +1,13 @@
-(ns todoist-sync.processed-db)
+(ns todoist-sync.processed-db
+  (:require [clojure.java.io :as io])
+  (:import (com.typesafe.config ConfigFactory)))
 
 (require '[next.jdbc :as jdbc])
 
-(def ds (jdbc/get-datasource {:dbtype "postgresql" :dbname "todoist-sync" :user "todoist-sync" :password "todoist-sync"} ))
+(def ds (let [conf (ConfigFactory/load)]
+          (jdbc/get-datasource {:dbtype   "postgresql"
+                                :dbname   "todoist-sync"
+                                :user     (.getString conf "pg.user")
+                                :password (.getString conf "pg.password")})))
 
-(jdbc/execute! ds ["SELECT 1"])
+(jdbc/execute! ds [(slurp (io/resource "create_db.sql"))])
