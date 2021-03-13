@@ -4,7 +4,8 @@
             [todoist-sync.texts-handler :as thd]
             [clojure.data.json :as json]
             [clojure.string :as str]
-            [clojure.set :as set])
+            [clojure.set :as set]
+            [todoist-sync.processed-db :as db])
   (:import (java.net URL)))
 
 (defn to-id-and-summary [resp]
@@ -51,6 +52,7 @@
                                 (not-empty))))
         issues (map :issue input-issues-info)
         tag-name (:tag (:settings body) "in-my-plan")
+        _ (db/store-tag-sync-query (:id (yt-client/me yt-token)) tag-name (:text body))
         issues-yt-data-by-state (->> (load-issues yt-token issues) (group-by (fn [issue] (if (:resolved issue) :resolved :unresolved))))
         added (add-tag-for-issues yt-token (:unresolved issues-yt-data-by-state) tag-name)
         known-scheduled-issues (get-all-tagged-issues yt-token tag-name)]
