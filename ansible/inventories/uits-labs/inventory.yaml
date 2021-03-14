@@ -3,8 +3,12 @@ all:
     uits-labs:
       ansible_host: deb10.uits-labs.ru
       ansible_user: root
+      ansible_python_interpreter: /usr/bin/python3
   children:
     wildfly:
+      hosts:
+        uits-labs:
+    pg:
       hosts:
         uits-labs:
   vars:
