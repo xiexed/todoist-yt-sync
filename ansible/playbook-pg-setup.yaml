@@ -1,0 +1,47 @@
+- hosts: pg
+  tasks:
+    - name: Install libpq-dev for psycopg2
+      apt: { name: libpq-dev, state: latest }
+    - name: install pip
+      apt: { name: python3-pip, state: latest } 
+    - name: install python-pkg-resources
+      apt: { name: python-pkg-resources, state: latest }
+    - name: install setfacl support
+      become: yes
+      apt: pkg=acl
+    - name: Install psycopg2 for ansible handle postgres
+      pip: { name: psycopg2-binary }
+    - name: act as postgres
+      become_user: postgres
+      become: yes
+      block:
+        - name: Create todoist-sync User
+          postgresql_user:
+            name: "{{ pg_user }}"
+            password: "{{ pg_password }}"
+        - name: Create todoist-sync Database
+          postgresql_db:
+            name: todoist-sync
+            owner: "{{ pg_user }}"
+            encoding: UTF-8
+- hosts: wildfly
+  tasks:
+    - name: "Ensure ds conf"
+      lineinfile:
+        name: /opt/wildfly/standalone/configuration/standalone.xml
+        regexp: '.*<datasource jndi-name="java:jboss/datasources/todoist-sync-pg" pool-name="todoist-sync-pg">.*'
+        state: absent
+      check_mode: yes
+      changed_when: false
+      register: ds
+    - name: configure datasource in wf
+      when: ds.found == 0
+      command:
+        argv:
+          - /opt/wildfly/bin/jboss-cli.sh
+          - --connect
+          - --command=data-source add --jndi-name=java:jboss/datasources/todoist-sync-pg --name=todoist-sync-pg --connection-url=jdbc:postgresql://localhost:5432/todoist-sync --driver-name=postgres --user-name={{ pg_user }} --password={{ pg_password }}
+
+
+
+
