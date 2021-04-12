@@ -34,15 +34,16 @@
 
 (def last-sent-text (atom nil))
 
-(defn yt-token [request]
-  (let [token-info (get-in request [:oauth2/access-tokens :youtrack])
+(defn active-token [request service-key]
+  (let [token-info (get-in request [:oauth2/access-tokens service-key])
         ^DateTime expires (:expires token-info)]
     (when (and expires (.isAfterNow expires))
       (token-info :token))))
 
 (defn tokens [request]
   {:todoist  (get-in request [:oauth2/access-tokens :todoist :token])
-   :youtrack (yt-token request)})
+   :google  (active-token request :google)
+   :youtrack (active-token request :youtrack)})
 
 (defroutes json-api
            (-> (context "/json" []
@@ -110,6 +111,15 @@
                                            :scopes           ["YouTrack"]
                                            :launch-uri       "/oauth2/hub"
                                            :redirect-uri     "/oauth2/hub/callback"
+                                           :landing-uri      "/"}
+                                          :google
+                                          {:authorize-uri    "https://accounts.google.com/o/oauth2/v2/auth"
+                                           :access-token-uri "https://oauth2.googleapis.com/token"
+                                           :client-id        (.getString conf "oauth.google.client-id")
+                                           :client-secret    (.getString conf "oauth.google.client-secret")
+                                           :scopes           ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+                                           :launch-uri       "/oauth2/google"
+                                           :redirect-uri     "/oauth2/google/callback"
                                            :landing-uri      "/"}}))
               (wrap-session {:store        (ses-mem/memory-store session-atom)
                              :cookie-attrs {:max-age (* 60 60 24 30)}})

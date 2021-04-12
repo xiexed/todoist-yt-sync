@@ -157,6 +157,16 @@
                                 Youtrack Is NOT Authenticated! (<a href="oauth2/hub">Authenticate</a>)
                             </div>
                         </div>
+                        <div class="q-px-sm">
+                            <div v-if="state.google">
+                                <q-icon name="check_circle" class="text-green"></q-icon>
+                                Google Authenticated
+                            </div>
+                            <div v-else>
+                                <q-icon name="error" class="text-red"></q-icon>
+                                Google Is NOT Authenticated! (<a href="oauth2/google">Authenticate</a>)
+                            </div>
+                        </div>
 
                         <q-select v-model="taskSelected" :options="state['task-options']" label="Task to do"></q-select>
                         <q-expansion-item expand-separator icon="settings" label="Settings"
