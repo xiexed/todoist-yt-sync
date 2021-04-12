@@ -2,7 +2,6 @@
   (:require [clj-http.client :as client]
             [clojure.string :as str]))
 
-;(map (fn [data-vector] (map (fn [rawData-vector] (map type (map :values rawData-vector))) (map :rowData data-vector))) (map :data (-> raw :body :sheets)))
 
 (defn get-raw [my-google-token]
   (client/get "https://sheets.googleapis.com/v4/spreadsheets/1k8mvJfz0Bl-FWf2ndSbrFjEzfKh_3f9_OrI9wwGqShQ"
@@ -52,12 +51,16 @@
 
 (defn wrap [prefix suffix value] (when value (str prefix value suffix)))
 
+(defn get-or [m keys]
+  (first (keep (fn [key] (get m key)) keys)))
+
 (defn render-line [line]
   (let [assignee (get line "Responsible person")
-        assignee-render (wrap " [*" "*]" assignee )]
-    (str/replace (str " - [ ] " (str/trim (str/replace (get line "UI Group Name | Element Name") "\n" " ")) assignee-render) #"\s+" " "))
-  
-  )
+        assignee-render (wrap " [**" "**]" assignee)
+        title (get-or line ["UI Group Name | Element Name" "Path"])]
+    (str/replace (str " - [ ] "
+                      (str/trim (str/replace title "\n" " "))
+                      assignee-render) #"\s+" " ")))
 
 (defn render-md-checklist [raw]
   (let [matrix (parse-resp raw)
