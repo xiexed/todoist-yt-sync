@@ -30,24 +30,17 @@
 
 (defn sheet-table-to-maps [sheet]
   (let [headers (nth sheet 2)]
-    (loop [gr nil [head & tail] (drop 2 sheet) accum {}]
+    (loop [gr nil [head & tail] (drop 2 sheet) accum []]
       (if head
         (let [meaningful-values (filter some? head)
               meaning-count (count meaningful-values)]
           (cond
             (= meaning-count 1) (recur (first meaningful-values) tail accum)
-            (> meaning-count 1) (recur gr tail 
-                                       (update accum gr
-                                               (fn [prev] 
-                                                 (conj (or prev [])
-                                                       (into {} (map (fn [header value] [header value]) headers head)))
-                                                 )))
-            :else (recur gr tail accum)
-            ))
-        accum)
-      )
-    )
-  )
+            (> meaning-count 1) (recur gr tail
+                                       (conj accum (into {:section gr} 
+                                                         (map (fn [header value] [header value]) headers head))))
+            :else (recur gr tail accum)))
+        accum))))
 
 (defn wrap [prefix suffix value] (when value (str prefix value suffix)))
 
@@ -62,10 +55,26 @@
                       (str/trim (str/replace title "\n" " "))
                       assignee-render) #"\s+" " ")))
 
+(defn mapd2 [t f seqseq] (map (fn [s] (t f s)) seqseq))
+
+(def our-team #{"Aleksandr Izmaylov"
+                "Konstantin Aleev"
+                "Michael Golubev"
+                "Nicolay Mitropolsky"
+                "Nikita Katkov"
+                "Sergey Anchipolevsky"
+                "Sergey Vasiliev"
+                "Yuriy Artamonov"})
+
+(defn our [line]
+  (or (= "IDEA - Ultimate" (:section line))
+      (some (fn [person] (let [responsible (get line "Responsible person")]
+                           (and responsible (str/includes? responsible person)))) our-team)))
+
 (defn render-md-checklist [raw]
   (let [matrix (parse-resp raw)
         sheet-headers (->> raw :body :sheets (map :properties) (map :title))
         all-parsed (map sheet-table-to-maps matrix)
-        ultimates (map #(get % "IDEA - Ultimate") all-parsed)
+        ultimates (mapd2 filter our all-parsed)
         sheet-renders (map (fn [sheet] (map render-line sheet)) ultimates)]
     (->> (map (fn [shead data] (str "### " shead "\n" (str/join "\n" data))) sheet-headers sheet-renders) (str/join "\n\n"))))
