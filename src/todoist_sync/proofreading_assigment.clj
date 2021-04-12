@@ -1,5 +1,6 @@
 (ns todoist-sync.proofreading-assigment
-  (:require [clj-http.client :as client]))
+  (:require [clj-http.client :as client]
+            [clojure.string :as str]))
 
 ;(map (fn [data-vector] (map (fn [rawData-vector] (map type (map :values rawData-vector))) (map :rowData data-vector))) (map :data (-> raw :body :sheets)))
 
@@ -26,11 +27,9 @@
          (fn [sheet]
            (->> (:data sheet)
                 (mapcat (fn [sheet-data] (map :values (:rowData sheet-data))))
-                (map (fn [row] (map :formattedValue row))))
-           ))
-       ))
+                (map (fn [row] (map :formattedValue row))))))))
 
-(defn- sheet-table-to-maps [sheet]
+(defn sheet-table-to-maps [sheet]
   (let [headers (nth sheet 2)]
     (loop [gr nil [head & tail] (drop 2 sheet) accum {}]
       (if head
@@ -51,7 +50,19 @@
     )
   )
 
-(defn pretty-map [matrix]
-  (map sheet-table-to-maps matrix))
+(defn wrap [prefix suffix value] (when value (str prefix value suffix)))
 
-;(map (fn [sheet] (map (fn [line] (str (get line "UI Group Name | Element Name") " [" (get line "Responsible person") "]")) sheet )) (take 2 (map #(get % "IDEA - Ultimate") (pretty-map (parse-resp raw0)))))
+(defn render-line [line]
+  (let [assignee (get line "Responsible person")
+        assignee-render (wrap " [*" "*]" assignee )]
+    (str/replace (str " - [ ] " (str/trim (str/replace (get line "UI Group Name | Element Name") "\n" " ")) assignee-render) #"\s+" " "))
+  
+  )
+
+(defn render-md-checklist [raw]
+  (let [matrix (parse-resp raw)
+        sheet-headers (->> raw :body :sheets (map :properties) (map :title))
+        all-parsed (map sheet-table-to-maps matrix)
+        ultimates (map #(get % "IDEA - Ultimate") all-parsed)
+        sheet-renders (map (fn [sheet] (map render-line sheet)) ultimates)]
+    (->> (map (fn [shead data] (str "### " shead "\n" (str/join "\n" data))) sheet-headers sheet-renders) (str/join "\n\n"))))
