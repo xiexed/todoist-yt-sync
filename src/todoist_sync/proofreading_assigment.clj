@@ -2,6 +2,11 @@
   (:require [clj-http.client :as client]
             [clojure.string :as str]))
 
+(comment
+  (require '[todoist-sync.proofreading-assigment :refer :all])
+  (spit "from-table.md" (render-md-checklist (get-raw (->> (deref session-atom) (vals) (first) (:ring.middleware.oauth2/access-tokens) (:google) (:token)))))
+  )
+
 
 (defn get-raw [my-google-token]
   (client/get "https://sheets.googleapis.com/v4/spreadsheets/1k8mvJfz0Bl-FWf2ndSbrFjEzfKh_3f9_OrI9wwGqShQ"
@@ -47,11 +52,14 @@
 (defn get-or [m keys]
   (first (keep (fn [key] (get m key)) keys)))
 
+(defn done-mark [line]
+  (if (= "done" (some-> (get line "State (Done/In Progress/Not Started)") (str/lower-case) (str/trim))) "x" " "))
+
 (defn render-line [line]
   (let [assignee (get line "Responsible person")
         assignee-render (wrap " [**" "**]" assignee)
         title (get-or line ["UI Group Name | Element Name" "Path"])]
-    (str/replace (str " - [ ] "
+    (str/replace (str "- [" (done-mark line) "] "
                       (str/trim (str/replace title "\n" " "))
                       assignee-render) #"\s+" " ")))
 
