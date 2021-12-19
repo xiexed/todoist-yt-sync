@@ -168,6 +168,7 @@
                             </div>
                             <div class="q-tab-panel"
                                  v-if="taskSelected && taskSelected.value === 'SynctagforIssues'">
+                                <q-checkbox v-model="settings.resolved" label="Sync resolved" stack-label></q-checkbox>
                                 <q-input v-model="settings.tag" label="Tag to Sync" stack-label></q-input>
                             </div>
                             <div class="q-tab-panel"
@@ -215,6 +216,7 @@
                     separator: ", ",
                     prefixes: "IDEA KT KTIJ",
                     tag: "in-my-plan",
+                    resolved: false,
                     "single-task": true
                 },
                 text: '',

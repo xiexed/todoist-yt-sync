@@ -60,16 +60,17 @@
                                 (not-empty))))
         issues (map :issue input-issues-info)
         tag-name (:tag (:settings body) "in-my-plan")
-        issues-yt-data-by-state (->> (load-issues yt-token issues) (group-by (fn [issue] (if (resolved? issue) :resolved :unresolved))))
-        added (add-tag-for-issues yt-token (:unresolved issues-yt-data-by-state) tag-name)
+        should-be-tagged? (if (:resolved (:settings body) false) (constantly true) (complement resolved?) )
+        issues-yt-data-by-state (->> (load-issues yt-token issues) (group-by (fn [issue] (if (should-be-tagged? issue) ::to-tag ::dont-tag))))
+        added (add-tag-for-issues yt-token (::to-tag issues-yt-data-by-state) tag-name)
         known-scheduled-issues (get-all-tagged-issues yt-token tag-name)]
     {:duplicates                 (->> issues (frequencies) (filter (fn [[_ f]] (> f 1))) (map first) (not-empty))
      :issues-added               (keep-summaries added)
      :issues-missing             (let [issues-set (set issues)]
                                    (not-empty (remove #(issues-set (:issue %)) known-scheduled-issues)))
      :issues-foreign             (keep-summaries (get-all-tagged-issues yt-token tag-name "for: -me for: -Unassigned"))
-     :issues-resolved            (keep-summaries (filter resolved? (get-all-tagged-issues yt-token tag-name "#Resolved")))
-     :not-added-because-resolved (keep-summaries (map to-id-and-summary (:resolved issues-yt-data-by-state)))}))
+     :issues-resolved            (keep-summaries (remove should-be-tagged? (get-all-tagged-issues yt-token tag-name "#Resolved")))
+     :not-added-because-resolved (keep-summaries (map to-id-and-summary (::dont-tag issues-yt-data-by-state)))}))
 
 (defn mk-link [issue-str]
   (str "<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://youtrack.jetbrains.com/issue/"
