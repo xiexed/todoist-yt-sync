@@ -79,9 +79,10 @@
 
 (defn issue-type-and-url [issue-str]
   (or (when-let [[_ rid num] (re-matches #"(\w+)-CR-(\d+)" issue-str)]
-        {:url     (if (#{"KT" "IJ"} rid)
-                    (str "https://jetbrains.team/p/" rid "/review/" num "/timeline")
-                    (str "https://upsource.jetbrains.com/intellij/review/" issue-str))
+        {:url     (cond
+                    (#{"KT" "IJ"} rid) (str "https://jetbrains.team/p/" rid "/review/" num "/timeline")
+                    (= "KOTLIN" rid) (str "https://kotlin.jetbrains.space/p/" rid "/review/" num "/timeline")
+                    :else (str "https://upsource.jetbrains.com/intellij/review/" issue-str))
          :td-type :review})
       (when-let [[_ num] (re-matches #"EA-(\d+)" issue-str)]
         {:url     (str "https://ea.jetbrains.com/browser/ea_problems/" num)
@@ -107,16 +108,18 @@
                   (assoc head :others (map #(select-keys % [:issue :url]) others))
                   head))))))
 
-(def domains-to-read #{"jetbrains.team" "medium.com" "republic.ru"})
+(def domains-to-read #{"jetbrains.team" "medium.com" "republic.ru" "journal.tinkoff.ru"})
 
 (defn- extract-by-domain [text]
   (let [parsed-html (thd/parse-html-text text)
         domains (->> (thd/nodes-seq parsed-html)
                      (keep (fn [n] (:href (:attributes n))))
                      (map (fn [url] (.getHost (URL. url))))
-                     (into #{}))]
-    (list {:md-string (thd/to-markdown parsed-html)
-           :td-type   (if (not-empty (set/intersection domains domains-to-read)) :to-read nil)})))
+                     (into #{}))
+        markdown (thd/to-markdown parsed-html)]
+    (list {:md-string markdown
+           :td-type   (if (or (not-empty (set/intersection domains domains-to-read)) (str/includes? markdown "#read"))
+                        :to-read nil)})))
 
 (defn post-to-todoist [{token :todoist} {:keys [settings text]}]
   (let [issue-infos (or (not-empty
