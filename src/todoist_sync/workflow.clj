@@ -15,7 +15,7 @@
   (for [issue issues
         :let [tags-query-response
               (yt-client/issue {:key yt-token}
-                               issue {:fields "id,idReadable,summary,tags(name,id),resolved"}
+                               issue {:fields "id,idReadable,summary,tags(name,id),resolved,customFields(name,value(name))"}
                                {:throw-exceptions false})]
         :when (not (:error tags-query-response))]
     tags-query-response))
@@ -39,6 +39,15 @@
         (map to-id-and-summary)
         (not-empty))))
 
+(defn resolved? [issue]
+  (and (:resolved issue)
+       (as-> issue ff
+             (:customFields ff)
+             (filter (fn [cf] (= "State" (:name cf))) ff)
+             (first ff)
+             (get-in ff [:value :name])
+             (not= "Shelved" ff))))
+
 (defn update-scheduled-tag [{yt-token :youtrack} body]
   (let [input-issues-info (thd/extract-issues-from-html (:text body))
         keep-summaries (let [input-issues-info-map (into {} (map (juxt :issue identity) input-issues-info))]
@@ -51,7 +60,7 @@
                                 (not-empty))))
         issues (map :issue input-issues-info)
         tag-name (:tag (:settings body) "in-my-plan")
-        issues-yt-data-by-state (->> (load-issues yt-token issues) (group-by (fn [issue] (if (:resolved issue) :resolved :unresolved))))
+        issues-yt-data-by-state (->> (load-issues yt-token issues) (group-by (fn [issue] (if (resolved? issue) :resolved :unresolved))))
         added (add-tag-for-issues yt-token (:unresolved issues-yt-data-by-state) tag-name)
         known-scheduled-issues (get-all-tagged-issues yt-token tag-name)]
     {:duplicates                 (->> issues (frequencies) (filter (fn [[_ f]] (> f 1))) (map first) (not-empty))
@@ -59,7 +68,7 @@
      :issues-missing             (let [issues-set (set issues)]
                                    (not-empty (remove #(issues-set (:issue %)) known-scheduled-issues)))
      :issues-foreign             (keep-summaries (get-all-tagged-issues yt-token tag-name "for: -me for: -Unassigned"))
-     :issues-resolved            (keep-summaries (get-all-tagged-issues yt-token tag-name "#Resolved "))
+     :issues-resolved            (keep-summaries (filter resolved? (get-all-tagged-issues yt-token tag-name "#Resolved")))
      :not-added-because-resolved (keep-summaries (map to-id-and-summary (:resolved issues-yt-data-by-state)))}))
 
 (defn mk-link [issue-str]
