@@ -4,7 +4,9 @@
             [todoist-sync.texts-handler :as thd]
             [clojure.data.json :as json]
             [clojure.string :as str]
-            [clojure.set :as set])
+            [clojure.set :as set]
+            [todoist-sync.stub-recorder :as st]
+            )
   (:import (java.net URL)))
 
 (defn to-id-and-summary [resp]
@@ -131,7 +133,7 @@
 (def handlers
   [{:name      "Sync tag for Issues"
     :available #(:youtrack %)
-    :handler   update-scheduled-tag}
+    :handler   (fn [body settings] (st/log-clj-http "sync-tag.edn"  (update-scheduled-tag body settings)))}
    {:name      "Convert Html to Markdown"
     :available (constantly true)
     :handler   (fn [_ {:keys [text]}] {:text-out (thd/to-markdown (thd/parse-html-text text))})}
