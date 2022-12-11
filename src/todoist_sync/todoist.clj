@@ -1,18 +1,16 @@
 (ns todoist-sync.todoist
   (:require [clj-http.client :as client]
-            [clojure.data.json :as json]
-            [clojure.edn :as edn]
             [promesa.core :as p])
-  (:import (com.github.benmanes.caffeine.cache Caffeine CacheLoader LoadingCache)
-           (java.util.concurrent TimeUnit)
+  (:import (com.github.benmanes.caffeine.cache CacheLoader Caffeine LoadingCache)
            (java.time LocalDate)
-           (java.time.format DateTimeFormatter)))
+           (java.time.format DateTimeFormatter)
+           (java.util.concurrent TimeUnit)))
 
 (def ^LoadingCache token-agents (-> (Caffeine/newBuilder)
                                     (.expireAfterAccess 8 TimeUnit/HOURS)
                                     (.build (reify CacheLoader
-                                (load [_ token]
-                                  (agent {:token token}))))))
+                                              (load [_ token]
+                                                (agent {:token token}))))))
 
 (defn updating-state-off [token f]
   (p/create
@@ -25,33 +23,21 @@
                       (catch Exception e (reject e)))))
         (catch Exception e (reject e))))))
 
-(defn get-in-sync [token]
-  (client/get "https://api.todoist.com/sync/v8/sync"
-              {:query-params
-                       {"token"          token,
-                        "sync_token"     "*"
-                        "resource_types" (json/write-str ["sections"])}
-               :accept :json, :as :json}))
-
 (defn post-task [token data]
-  (updating-state-off token
-                      (fn [a]
-                        (let [b (-> (client/get "https://api.todoist.com/sync/v8/sync"
-                                                {:query-params
-                                                         {"token"    token,
-                                                          "commands" (json/write-str
-                                                                       [{:type    "item_add",
-                                                                         :args    data,
-                                                                         :temp_id (.toString (java.util.UUID/randomUUID))
-                                                                         :uuid    (.toString (java.util.UUID/randomUUID))
-                                                                         }])}
-                                                 :accept :json, :as :json}))]
-                          [a b]))))
+  (let [data (if (map? data) data {:content data})]
+    (updating-state-off token
+                        (fn [a]
+                          (let [b (-> (client/post "https://api.todoist.com/rest/v2/tasks"
+                                                   {:oauth-token  token
+                                                    :form-params  data
+                                                    :content-type :json
+                                                    :accept       :json, :as :json}))]
+                            [a b])))))
 
 (def issue-publishing-data
-  {:ticket {:project_id 2246332511, :section_id 26579827, :priority 2}
-   :ea {:project_id 2246332511, :section_id 26579827, :priority 2}
-   :review {:project_id 2246332511, :section_id 26572945, :priority 3}
+  {:ticket  {:project_id 2246332511, :section_id 26579827, :priority 2}
+   :ea      {:project_id 2246332511, :section_id 26579827, :priority 2}
+   :review  {:project_id 2246332511, :section_id 26572945, :priority 3}
    :to-read {:project_id 2250955014, :no-date true}})
 
 (defn post-as-issue [token issue-info]
@@ -59,5 +45,5 @@
         type-data (issue-publishing-data (:td-type issue-info))]
     (post-task token {:content    (:md-string issue-info),
                       :project_id (:project_id type-data), :section_id (:section_id type-data)
-                      :due        (when-not (:no-date type-data false) {:date today})
+                      :due_date   (when-not (:no-date type-data nil) today)
                       :priority   (:priority type-data)})))
