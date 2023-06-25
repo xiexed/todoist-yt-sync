@@ -7,6 +7,7 @@
                  [javax.servlet/servlet-api "2.5"]
                  [ring "1.8.2"]
                  [ring/ring-core "1.8.2"]
+                 [ring/ring-jetty-adapter "1.8.2"]
                  [compojure "1.6.2"]
                  [ring-oauth2 "0.1.5"]
                  [ring/ring-json "0.5.0"]
@@ -23,4 +24,5 @@
                  [org.postgresql/postgresql "42.2.18"]]
   :plugins [[lein-ring "0.12.5"]]
   :ring {:handler todoist-sync.core/app}
+  :main  todoist-sync.core
   :repl-options {:init-ns todoist-sync.core})

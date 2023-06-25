@@ -1,10 +1,12 @@
 (ns todoist-sync.core
+  (:gen-class)
   (:require [compojure.core :refer :all]
             [compojure.route :as route]
             [todoist-sync.todoist :as tdst]
             [todoist-sync.texts-handler :as thd]
             [todoist-sync.workflow :as workflow]
             [ring.util.response :as rur]
+            [ring.adapter.jetty :as jetty]
             [ring.middleware.cookies :refer [wrap-cookies]]
             [ring.middleware.params :refer [wrap-params]]
             [ring.middleware.oauth2 :refer [wrap-oauth2]]
@@ -115,3 +117,7 @@
                              :cookie-attrs {:max-age (* 60 60 24 30)}})
               (wrap-cookies)
               (wrap-params))))
+
+(defn -main
+  [& args]
+  (jetty/run-jetty app {:port 3000}))
