@@ -80,7 +80,7 @@
 
 
 (defn issue-type-and-url [issue-str]
-  (or (when-let [[_ rid num] (re-matches #"(\w+)-CR-(\d+)" issue-str)]
+  (or (when-let [[_ rid num] (re-matches #"(\w+)-[CM]R-(\d+)" issue-str)]
         {:url     (cond
                     (#{"KT" "IJ"} rid) (str "https://jetbrains.team/p/" rid "/review/" num "/timeline")
                     (= "KOTLIN" rid) (str "https://kotlin.jetbrains.space/p/" rid "/review/" num "/timeline")
