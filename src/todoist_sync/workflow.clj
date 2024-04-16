@@ -1,11 +1,11 @@
 (ns todoist-sync.workflow
-  (:require [todoist-sync.yt-client :as yt-client]
-            [todoist-sync.todoist :as td]
-            [todoist-sync.texts-handler :as thd]
-            [clojure.data.json :as json]
-            [clojure.string :as str]
+  (:require [clojure.data.json :as json]
             [clojure.set :as set]
-            [todoist-sync.processed-db :as db])
+            [clojure.string :as str]
+            [todoist-sync.processed-db :as db]
+            [todoist-sync.texts-handler :as thd]
+            [todoist-sync.todoist :as td]
+            [todoist-sync.yt-client :as yt-client])
   (:import (java.net URL)))
 
 (defn to-id-and-summary [resp]
@@ -49,27 +49,43 @@
              (get-in ff [:value :name])
              (not= "Shelved" ff))))
 
+(def ^:private issue-to-uid-cache (atom {}))
+
+(defn get-issue-uid [issue yt-token]
+  (cond
+    (string? issue) (or (get @issue-to-uid-cache issue)
+                            (let [uid (try
+                                        (:id (yt-client/issue {:key yt-token} (str issue) {:fields "id"}))
+                                        (catch clojure.lang.ExceptionInfo e
+                                          (if (= 404 (:status (.getData e)))
+                                            issue
+                                            (throw e))))]
+                              (swap! issue-to-uid-cache assoc issue uid)
+                              uid))
+    (associative? issue) (get-issue-uid (:issue issue) yt-token)))
+
 (defn update-scheduled-tag [{yt-token :youtrack} body]
   (let [input-issues-info (thd/extract-issues-from-html (:text body))
-        keep-summaries (let [input-issues-info-map (into {} (map (juxt :issue identity) input-issues-info))]
+        get-issue-uid (fn [issue-str] (get-issue-uid issue-str yt-token))
+        keep-summaries (let [input-issues-info-map (into {} (map (juxt get-issue-uid identity) input-issues-info))]
                          (fn [id-and-summary-seq]
                            (->> id-and-summary-seq
                                 (keep (fn [id-and-summary]
                                         (when-let [input-text (get-in input-issues-info-map
-                                                                      [(:issue id-and-summary) :input-text])]
+                                                                      [(get-issue-uid id-and-summary) :input-text])]
                                           (assoc id-and-summary :summary input-text))))
                                 (not-empty))))
         issues (map :issue input-issues-info)
         tag-name (:tag (:settings body) "in-my-plan")
         _ (db/store-tag-sync-query (:id (yt-client/me yt-token)) tag-name (:text body))
-        should-be-tagged? (if (:resolved (:settings body) false) (constantly true) (complement resolved?) )
+        should-be-tagged? (if (:resolved (:settings body) false) (constantly true) (complement resolved?))
         issues-yt-data-by-state (->> (load-issues yt-token issues) (group-by (fn [issue] (if (should-be-tagged? issue) ::to-tag ::dont-tag))))
         added (add-tag-for-issues yt-token (::to-tag issues-yt-data-by-state) tag-name)
         known-scheduled-issues (get-all-tagged-issues yt-token tag-name)]
     {:duplicates                 (->> issues (frequencies) (filter (fn [[_ f]] (> f 1))) (map first) (not-empty))
      :issues-added               (keep-summaries added)
-     :issues-missing             (let [issues-set (set issues)]
-                                   (not-empty (remove #(issues-set (:issue %)) known-scheduled-issues)))
+     :issues-missing             (let [issues-set (set (map get-issue-uid issues))]
+                                   (not-empty (remove #(issues-set (get-issue-uid (:issue %))) known-scheduled-issues)))
      :issues-foreign             (keep-summaries (get-all-tagged-issues yt-token tag-name "for: -me for: -Unassigned"))
      :issues-resolved            (keep-summaries (remove should-be-tagged? (get-all-tagged-issues yt-token tag-name "#Resolved")))
      :not-added-because-resolved (keep-summaries (map to-id-and-summary (::dont-tag issues-yt-data-by-state)))}))
