@@ -61,19 +61,22 @@
      :state       (:name (custom-field issue-data "State"))
      :planned-for (map :name (custom-field issue-data "Planned for"))}))
 
-(defn report1 [yt-token]
+(defn load-dashboards-data [yt-token]
   (->> (load-dashboard-articles yt-token)
-       (pmap (fn [d]
-               (let [loaded (load-article yt-token (:id d))]
-                 {:assignee     (:summary loaded)
-                  :idReadable   (:idReadable d)
-                  :issues       (->> (parse-md-to-sections (:content loaded))
-                                     (map (fn [entry]
-                                            (update-in entry [:issues] (fn [issues]
-                                                                         (map #(load-issue-data yt-token %) issues))))))
-                  :mentioned-in (load-mentioned-in yt-token (:idReadable d))})))))
+       (map (fn [d]
+              (let [loaded (load-article yt-token (:id d))]
+                {:assignee     (:summary loaded)
+                 :idReadable   (:idReadable d)
+                 :issues       (->> (parse-md-to-sections (:content loaded))
+                                    (map (fn [entry]
+                                           (update-in entry [:issues] (fn [issues]
+                                                                        (map #(load-issue-data yt-token %) issues))))))
+                 :mentioned-in (load-mentioned-in yt-token (:idReadable d))})))))
 
-(defn report2 [yt-token report1-result]
-
-  )
+(defn to-remove [loaded-data]
+  (map (fn [db] {:assignee (:assignee db)
+                 :to-remove   (->> (:issues db)
+                                (mapcat (fn [en] (:issues en)))
+                                (filter (fn [issue] (or (:resolved issue) (= "Backlog" (:state issue)))))
+                                (map :idReadable))}) loaded-data))
 
