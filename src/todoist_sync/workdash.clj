@@ -18,7 +18,10 @@
 (defn parse-md-to-sections [text]
   (->> (s/split-lines text)
        (reduce (fn proccor [acc line]
-                 (let [trimmed-line (s/trim (s/replace line " " " "))]
+                 (let [trimmed-line (-> line
+                                        (s/replace-first #"^\s*[-*]\s*" "")
+                                        (s/replace " " " ")
+                                        (s/trim))]
                    (cond
                      (s/starts-with? trimmed-line "#")      ;; If it's a header
                      (conj acc {:header (s/replace-first trimmed-line #"^#\s*" "")
@@ -70,18 +73,22 @@
                  :issues       (->> (parse-md-to-sections (:content loaded))
                                     (map (fn [entry]
                                            (update-in entry [:issues] (fn [issues]
-                                                                        (map #(load-issue-data yt-token %) issues))))))
+                                                                        (pmap #(load-issue-data yt-token %) issues))))))
                  :mentioned-in (load-mentioned-in yt-token (:idReadable d))})))))
 
 (defn to-remove [loaded-data]
-  (map (fn [db] (let [all-issues  (mapcat (fn [en] (:issues en)) (:issues db))]
-                  {:assignee  (:assignee db)
-                   :to-remove (->> all-issues
-                                   (filter (fn [issue] (or (:resolved issue) (= "Backlog" (:state issue)))))
-                                   (map :idReadable))
-                   :reassign (->> all-issues
-                                   (filter (fn [issue] (or  (not= (:assignee db) (:assignee issue)))))
-                                   (map :idReadable))
+  (map (fn [db] (let [all-issues (mapcat (fn [en] (:issues en)) (:issues db))
+                      parsed-ids (into #{} (map :id all-issues))]
+                  {:assignee   (:assignee db)
+                   :to-remove  (->> all-issues
+                                    (filter (fn [issue] (or (:resolved issue) (= "Backlog" (:state issue)))))
+                                    (map :idReadable))
+                   :reassign   (->> all-issues
+                                    (filter (fn [issue] (or (not= (:assignee db) (:assignee issue)))))
+                                    (map :idReadable))
+                   :not-parsed (->> (:mentioned-in db)
+                                    (remove (fn [m] (parsed-ids (:id m))))
+                                    (map :idReadable))
                    }
                   )) loaded-data)
   )
