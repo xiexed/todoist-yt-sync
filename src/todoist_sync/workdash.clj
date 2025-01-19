@@ -1,5 +1,6 @@
 (ns todoist-sync.workdash
-  (:require [todoist-sync.yt-client :as yt-client]
+  (:require [clojure.string :as str]
+            [todoist-sync.yt-client :as yt-client]
             [clojure.string :as s]))
 
 (defn load-dashboard-articles
@@ -39,11 +40,11 @@
                []))
   )
 
-
-(defn find-duplicates [lst]
-  (let [frequencies (frequencies lst)]
-    (keep (fn [[k v]] (when (> v 1) k)) frequencies)))
-
+(defn find-duplicates-by [criteria-fn coll]
+  (->> coll
+       (group-by criteria-fn)
+       (filter (fn [[_ items]] (> (count items) 1)))
+       (mapcat second)))
 
 (defn- custom-field [issue-data name]
   (->> (:customFields issue-data)
@@ -73,23 +74,46 @@
                  :issues       (->> (parse-md-to-sections (:content loaded))
                                     (map (fn [entry]
                                            (update-in entry [:issues] (fn [issues]
-                                                                        (pmap #(load-issue-data yt-token %) issues))))))
+                                                                        (pmap #(load-issue-data yt-token %) issues)))))
+                                    (mapcat (fn [entry]
+                                              (map (fn [issue]
+                                                     (assoc issue :header (:header entry)))
+                                                   (:issues entry)))))
                  :mentioned-in (load-mentioned-in yt-token (:idReadable d))})))))
 
 (defn to-remove [loaded-data]
-  (map (fn [db] (let [all-issues (mapcat (fn [en] (:issues en)) (:issues db))
-                      parsed-ids (into #{} (map :id all-issues))]
-                  {:assignee   (:assignee db)
-                   :to-remove  (->> all-issues
-                                    (filter (fn [issue] (or (:resolved issue) (= "Backlog" (:state issue)))))
-                                    (map :idReadable))
-                   :reassign   (->> all-issues
-                                    (filter (fn [issue] (or (not= (:assignee db) (:assignee issue)))))
-                                    (map :idReadable))
-                   :not-parsed (->> (:mentioned-in db)
-                                    (remove (fn [m] (parsed-ids (:id m))))
-                                    (map :idReadable))
-                   }
-                  )) loaded-data)
+  (let [all-assignees (into #{} (map :assignee loaded-data))]
+    (->> loaded-data
+        (map (fn [db] (let [all-issues (:issues db)
+                            parsed-ids (into #{} (map :id all-issues))]
+                        {:assignee    (:assignee db)
+                         :to-remove   (->> all-issues
+                                           (filter (fn [issue] (or (:resolved issue) (= "Backlog" (:state issue)))))
+                                           (map :idReadable))
+                         :reassign    (->> all-issues
+                                           (filter (fn [issue]
+                                                     (if (= "Not team members" (:assignee db))
+                                                       (contains? all-assignees (:assignee issue))
+                                                       (not= (:assignee db) (:assignee issue)))))
+                                           (map :idReadable)
+                                           (str/join " "))
+                         :not-parsed  (->> (:mentioned-in db)
+                                           (remove (fn [m] (parsed-ids (:id m))))
+                                           (map :idReadable))
+                         :not-planned (->> all-issues
+                                           (filter #(= "Planned for current release" (:header %)))
+                                           (filter (fn [issue] (not-any? #(= "2025.1" %) (:planned-for issue))))
+                                           (map :idReadable)
+                                           (str/join " "))
+                         :duplicates  (->> all-issues
+                                           (find-duplicates-by :id)
+                                           (map :idReadable)
+                                           (str/join " "))
+                         }
+                        )))
+        (map (fn [entry]
+               (->> entry
+                    (filter (fn [[k v]] (not (empty? v))))
+                    (into {}))))))
   )
 
