@@ -94,7 +94,7 @@
                                            (filter (fn [issue]
                                                      (if (= "Not team members" (:assignee db))
                                                        (contains? all-assignees (:assignee issue))
-                                                       (not= (:assignee db) (:assignee issue)))))
+                                                       (and (contains? all-assignees (:assignee issue)) (not= (:assignee db) (:assignee issue))))))
                                            (map :idReadable)
                                            (str/join " "))
                          :not-parsed  (->> (:mentioned-in db)
@@ -111,9 +111,9 @@
                                            (str/join " "))
                          }
                         )))
-        (map (fn [entry]
-               (->> entry
-                    (filter (fn [[k v]] (not (empty? v))))
-                    (into {}))))))
+         (map (fn [entry]
+                (->> entry
+                     (filter (fn [[k v]] (not (empty? v))))
+                     (into {}))))))
   )
 

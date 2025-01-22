@@ -17,12 +17,11 @@
                  {:assignee    "Nurullokhon Gulomkodirov"
                   :duplicates  "IJPL-172787 IJPL-172787"
                   :not-planned "IJPL-166460"
-                  :reassign    "IJPL-66042 IJPL-66012 IJPL-66038 IJPL-66011 IJPL-174559 IJPL-161577 IJPL-159965 IJPL-158872"
+                  :reassign    "IJPL-66042 IJPL-66012 IJPL-66038 IJPL-66011 IJPL-174559 IJPL-159965 IJPL-158872"
                   :to-remove   ["IJPL-166460"]}
                  {:assignee "Andrey Belyaev"
                   :reassign "IJPL-172142"}
-                 {:assignee "Nikita Katkov"
-                  :reassign "IJPL-174666"}
+                 {:assignee "Nikita Katkov"}
                  {:assignee   "Yuri Trukhin"
                   :duplicates "IJPL-174847 IJPL-174847"}
                  {:assignee "Not team members"
