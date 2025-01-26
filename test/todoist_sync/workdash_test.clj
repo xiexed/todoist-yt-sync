@@ -54,7 +54,8 @@
              :idParsed "RUBY-15482"}
             {:header   "Other"
              :idParsed "IJPL-64883"}]
-           (wd/parse-md-to-sections "IJPL-172703 Provide the Kubernetes file schema to Fus for the File Types in Project counter
+           (wd/parse-md-to-sections "
+           IJPL-172703 Provide the Kubernetes file schema to Fus for the File Types in Project counter
            IJPL-165755 Kubernetes. Logs recent search selection pastes values incorrectly in split mode
            IJPL-66868 The ability to perform common actions for the technology at the level of the Technology Node in Service View
            IJPL-66860 Kubernetes: can't close log tab in services view
@@ -128,11 +129,11 @@
             {:header   "To be prioritised"
              :idParsed "IJPL-161070"}
             {:header   "Planned for current release"
-             :idParsed "IJPL-149580"}
-            {:header   "Planned for current release"
-             :idParsed "IJPL-166460"}
-            {:header   "Planned for current release"
-             :idParsed "IJPL-66008"}
+             :idParsed "IJPL-149580"
+             :inner    [{:header   "Planned for current release"
+                         :idParsed "IJPL-166460"}
+                        {:header   "Planned for current release"
+                         :idParsed "IJPL-66008"}]}
             {:header   "Planned for current release"
              :idParsed "IJPL-66097"}
             {:header   "Planned for current release"

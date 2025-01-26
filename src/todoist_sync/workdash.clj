@@ -17,32 +17,33 @@
        (map #(select-keys % [:idReadable :id]))))
 
 (defn parse-md-to-sections [text]
-  (->> (s/split-lines text)
-       (reduce (fn proccor [acc line]
-                 (let [trimmed-line (-> line
-                                        (s/replace-first #"^\s*[-*]\s*" "")
-                                        (s/replace " " " ")
-                                        (s/trim))]
-                   (cond
-                     (s/starts-with? trimmed-line "#")      ;; If it's a header
-                     (conj acc {:header (s/replace-first trimmed-line #"^#\s*" "")
-                                :issues []})
+  (loop [[^String head & tail] (s/split-lines text)
+         header nil
+         prev-pref Integer/MAX_VALUE
+         collected []]
+    (if head
+      (let [pref (re-find #"^\s*[-*]?\s*" head)
+            pref-len (count pref)
+            trimmed-line (.substring head pref-len)]
 
-                     (re-matches #"^\w+-\d+.*" trimmed-line)
-                     ;; If it's an issue
-                     (let [issue-id (first (s/split trimmed-line #"\s+"))]
-                       (if (empty? acc)
-                         (proccor [{:header nil
-                                    :issues []}] line)
-                         (update-in acc [(dec (count acc)) :issues] conj issue-id)))
+        (cond
+          (s/starts-with? trimmed-line "#")
+          (recur tail (s/replace-first trimmed-line #"^#\s*" "") Integer/MAX_VALUE collected)
 
-                     :else acc)))
-               [])
-       (mapcat (fn [entry]
-                 (map (fn [issue]
-                        {:idParsed issue
-                         :header (:header entry)})
-                      (:issues entry)))))
+          (re-matches #"^\w+-\d+.*" trimmed-line)
+          (let [issue-id (first (s/split trimmed-line #"\s+"))
+                item {:header    header
+                      :idParsed  issue-id}]
+            (if (or (> pref-len prev-pref)
+                    (and (= pref-len prev-pref) (:inner (peek collected))))
+              (recur tail header pref-len
+                     (update-in collected [(dec (count collected)) :inner] (fn [prev ] (conj (or prev []) item))))
+              (recur tail header pref-len
+                     (conj collected item))))
+
+          :else
+          (recur tail header prev-pref collected)))
+      collected))
   )
 
 (defn find-duplicates-by [criteria-fn coll]
@@ -78,7 +79,7 @@
                  :idReadable   (:idReadable d)
                  :issues       (->> (parse-md-to-sections (:content loaded))
                                     (pmap (fn [issue]
-                                           (merge issue (load-issue-data yt-token (:idParsed issue))))))
+                                            (merge issue (load-issue-data yt-token (:idParsed issue))))))
                  :mentioned-in (load-mentioned-in yt-token (:idReadable d))})))))
 
 (defn to-remove [loaded-data]
