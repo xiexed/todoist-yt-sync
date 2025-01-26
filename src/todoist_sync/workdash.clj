@@ -1,6 +1,7 @@
 (ns todoist-sync.workdash
   (:require [clojure.string :as str]
             [todoist-sync.yt-client :as yt-client]
+            [todoist-sync.utils.utils :as u]
             [clojure.string :as s]))
 
 (defn load-dashboard-articles
@@ -16,35 +17,41 @@
   (->> (yt-client/issues {:key yt-token} (str "mentioned in: " article) {:fields "id,idReadable"})
        (map #(select-keys % [:idReadable :id]))))
 
+
+(defrecord MdLine [type value prefix])
+
+(defn parse-md-line [line]
+  (let [pref (re-find #"^\s*[-*]?\s*" line)
+        pref-len (count pref)
+        trimmed-line (.substring line pref-len)]
+    (cond
+      (s/starts-with? trimmed-line "#")
+      (->MdLine :header (s/replace-first trimmed-line #"^#\s*" "") 0)
+
+      (re-matches #"^\w+-\d+.*" trimmed-line)
+      (->MdLine :issue (first (s/split trimmed-line #"\s+")) pref-len)
+
+      :else nil)))
+
 (defn parse-md-to-sections [text]
-  (loop [[^String head & tail] (s/split-lines text)
-         header nil
-         prev-pref Integer/MAX_VALUE
-         collected []]
-    (if head
-      (let [pref (re-find #"^\s*[-*]?\s*" head)
-            pref-len (count pref)
-            trimmed-line (.substring head pref-len)]
+  ((fn collect-on-level [[head & tail :as input] header]
+     (if head
+       (cond
+         (= :header (:type head))
+         (recur tail (:value head))
 
-        (cond
-          (s/starts-with? trimmed-line "#")
-          (recur tail (s/replace-first trimmed-line #"^#\s*" "") Integer/MAX_VALUE collected)
-
-          (re-matches #"^\w+-\d+.*" trimmed-line)
-          (let [issue-id (first (s/split trimmed-line #"\s+"))
-                item {:header    header
-                      :idParsed  issue-id}]
-            (if (or (> pref-len prev-pref)
-                    (and (= pref-len prev-pref) (:inner (peek collected))))
-              (recur tail header pref-len
-                     (update-in collected [(dec (count collected)) :inner] (fn [prev ] (conj (or prev []) item))))
-              (recur tail header pref-len
-                     (conj collected item))))
-
-          :else
-          (recur tail header prev-pref collected)))
-      collected))
-  )
+         (= :issue (:type head))
+         (let [item (u/non-zero-map :header header
+                                    :idParsed (:value head))
+               next-level (some-> (first tail) :prefix)]
+           (if (and next-level (> next-level (:prefix head)))
+             (let [[inner remaining] (split-with #(<= next-level (:prefix %)) tail)
+                   collected-inner (collect-on-level inner nil)
+                   item (assoc item :inner collected-inner)]
+               (cons item (collect-on-level remaining header)))
+             (cons item (collect-on-level tail header)))))
+       nil))
+   (keep parse-md-line (s/split-lines text)) nil))
 
 (defn find-duplicates-by [criteria-fn coll]
   (->> coll

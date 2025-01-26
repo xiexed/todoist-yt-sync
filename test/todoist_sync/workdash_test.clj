@@ -34,18 +34,12 @@
 (deftest test-parse-articles
   (testing "Testing No members"
 
-    (is (= [{:header   nil
-             :idParsed "IJPL-172703"}
-            {:header   nil
-             :idParsed "IJPL-165755"}
-            {:header   nil
-             :idParsed "IJPL-66868"}
-            {:header   nil
-             :idParsed "IJPL-66860"}
-            {:header   nil
-             :idParsed "IJPL-68955"}
-            {:header   nil
-             :idParsed "IJPL-63550"}
+    (is (= [{:idParsed "IJPL-172703"}
+            {:idParsed "IJPL-165755"}
+            {:idParsed "IJPL-66868"}
+            {:idParsed "IJPL-66860"}
+            {:idParsed "IJPL-68955"}
+            {:idParsed "IJPL-63550"}
             {:header   "BDT"
              :idParsed "IJPL-174116"}
             {:header   "BDT"
@@ -76,76 +70,74 @@
            )))
 
   (testing "Testing Nested"
-    (is (= [{:header   "Active Backlog"
-             :idParsed "IJPL-173714"}
-            {:header   "Active Backlog"
-             :idParsed "IJPL-172017"}
-            {:header   "Active Backlog"
-             :idParsed "IJPL-163312"}
-            {:header   "Active Backlog"
-             :idParsed "IJPL-165572"}
-            {:header   "Active Backlog"
-             :idParsed "IJPL-165236"}
-            {:header   "Active Backlog"
-             :idParsed "IJPL-165219"}
-            {:header   "To be prioritised"
-             :idParsed "IJPL-172213"}
-            {:header   "To be prioritised"
-             :idParsed "IJPL-172664"}
-            {:header   "To be prioritised"
-             :idParsed "IJPL-172787"}
-            {:header   "To be prioritised"
-             :idParsed "IJPL-66016"}
-            {:header   "To be prioritised"
-             :idParsed "IJPL-159100"}
-            {:header   "To be prioritised"
-             :idParsed "IJPL-160743"}
-            {:header   "To be prioritised"
-             :idParsed "IJPL-174559"}
-            {:header   "To be prioritised"
-             :idParsed "IJPL-171642"}
-            {:header   "To be prioritised"
-             :idParsed "IJPL-163577"}
-            {:header   "To be prioritised"
-             :idParsed "IJPL-172984"}
-            {:header   "To be prioritised"
-             :idParsed "IJPL-172923"}
-            {:header   "To be prioritised"
-             :idParsed "IJPL-161577"}
-            {:header   "To be prioritised"
-             :idParsed "IJPL-171910"}
-            {:header   "To be prioritised"
-             :idParsed "IJPL-171488"}
-            {:header   "To be prioritised"
-             :idParsed "IJPL-171253"}
-            {:header   "To be prioritised"
-             :idParsed "IJPL-162957"}
-            {:header   "To be prioritised"
-             :idParsed "IJPL-151224"}
-            {:header   "To be prioritised"
-             :idParsed "IJPL-158811"}
-            {:header   "To be prioritised"
-             :idParsed "IJPL-164416"}
-            {:header   "To be prioritised"
-             :idParsed "IJPL-161070"}
-            {:header   "Planned for current release"
-             :idParsed "IJPL-149580"
-             :inner    [{:header   "Planned for current release"
-                         :idParsed "IJPL-166460"}
-                        {:header   "Planned for current release"
-                         :idParsed "IJPL-66008"}]}
-            {:header   "Planned for current release"
-             :idParsed "IJPL-66097"}
-            {:header   "Planned for current release"
-             :idParsed "IJPL-66037"}
-            {:header   "Planned for current release"
-             :idParsed "IJPL-66020"}
-            {:header   "Planned for current release"
-             :idParsed "IJPL-159091"}
-            {:header   "Planned for current release"
-             :idParsed "IJPL-158416"}
-            {:header   "Planned for current release"
-             :idParsed "IJPL-172787"}]
+    (is (= (list {:header   "Active Backlog"
+                  :idParsed "IJPL-173714"}
+                 {:header   "Active Backlog"
+                  :idParsed "IJPL-172017"}
+                 {:header   "Active Backlog"
+                  :idParsed "IJPL-163312"}
+                 {:header   "Active Backlog"
+                  :idParsed "IJPL-165572"}
+                 {:header   "Active Backlog"
+                  :idParsed "IJPL-165236"}
+                 {:header   "Active Backlog"
+                  :idParsed "IJPL-165219"}
+                 {:header   "To be prioritised"
+                  :idParsed "IJPL-172213"}
+                 {:header   "To be prioritised"
+                  :idParsed "IJPL-172664"}
+                 {:header   "To be prioritised"
+                  :idParsed "IJPL-172787"}
+                 {:header   "To be prioritised"
+                  :idParsed "IJPL-66016"}
+                 {:header   "To be prioritised"
+                  :idParsed "IJPL-159100"}
+                 {:header   "To be prioritised"
+                  :idParsed "IJPL-160743"}
+                 {:header   "To be prioritised"
+                  :idParsed "IJPL-174559"}
+                 {:header   "To be prioritised"
+                  :idParsed "IJPL-171642"}
+                 {:header   "To be prioritised"
+                  :idParsed "IJPL-163577"}
+                 {:header   "To be prioritised"
+                  :idParsed "IJPL-172984"}
+                 {:header   "To be prioritised"
+                  :idParsed "IJPL-172923"}
+                 {:header   "To be prioritised"
+                  :idParsed "IJPL-161577"}
+                 {:header   "To be prioritised"
+                  :idParsed "IJPL-171910"}
+                 {:header   "To be prioritised"
+                  :idParsed "IJPL-171488"}
+                 {:header   "To be prioritised"
+                  :idParsed "IJPL-171253"}
+                 {:header   "To be prioritised"
+                  :idParsed "IJPL-162957"}
+                 {:header   "To be prioritised"
+                  :idParsed "IJPL-151224"}
+                 {:header   "To be prioritised"
+                  :idParsed "IJPL-158811"}
+                 {:header   "To be prioritised"
+                  :idParsed "IJPL-164416"}
+                 {:header   "To be prioritised"
+                  :idParsed "IJPL-161070"}
+                 {:header   "Planned for current release"
+                  :idParsed "IJPL-149580"
+                  :inner    (list {:idParsed "IJPL-166460"}
+                                  {:idParsed "IJPL-66008"})}
+                 {:header   "Planned for current release"
+                  :idParsed "IJPL-66097"}
+                 {:header   "Planned for current release"
+                  :idParsed "IJPL-66037"}
+                 {:header   "Planned for current release"
+                  :idParsed "IJPL-66020"}
+                 {:header   "Planned for current release"
+                  :idParsed "IJPL-159091"}
+                 {:header   "Planned for current release"
+                  :idParsed "IJPL-158416"}
+                 {:header   "Planned for current release"
+                  :idParsed "IJPL-172787"})
            (wd/parse-md-to-sections "# Active Backlog
 
            IJPL-173714 Revise and fix BDT unit tests in master
