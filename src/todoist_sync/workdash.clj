@@ -99,31 +99,42 @@
          (map (fn [db] (let [all-issues (:issues db)
                              all-issues-flatten ((fn flat-issue [issues]
                                                    (mapcat (fn [issue] (cons issue (flat-issue (:inner issue)))) issues)) all-issues)
-                             parsed-ids (into #{} (map :id all-issues-flatten))]
+                             parsed-ids (into #{} (map :id all-issues-flatten))
+                             to-remove (->> all-issues
+                                            (filter (fn [issue] (or (:resolved issue) (= "Backlog" (:state issue))))))]
                          {
-                          :assignee           (:assignee db)
-                          :to-remove          (->> all-issues
-                                                   (filter (fn [issue] (or (:resolved issue) (= "Backlog" (:state issue)))))
-                                                   (map :idReadable))
-                          :reassign           (->> all-issues-flatten
-                                                   (filter (fn [issue]
-                                                             (if (= "Not team members" (:assignee db))
-                                                               (contains? all-assignees (:assignee issue))
-                                                               (and (contains? all-assignees (:assignee issue)) (not= (:assignee db) (:assignee issue))))))
-                                                   (map :idReadable)
-                                                   (str/join " "))
-                          :not-parsed         (->> (:mentioned-in db)
-                                                   (remove (fn [m] (parsed-ids (:id m))))
-                                                   (map :idReadable))
-                          :not-planned        (->> all-issues
-                                                   (filter #(= "Planned for current release" (:header %)))
-                                                   (filter (fn [issue] (not-any? #(= "2025.1" %) (:planned-for issue))))
-                                                   (map :idReadable)
-                                                   (str/join " "))
-                          :duplicates         (->> all-issues
-                                                   (find-duplicates-by :id)
-                                                   (map :idReadable)
-                                                   (str/join " "))
+                          :assignee            (:assignee db)
+                          :to-remove           (->> to-remove
+                                                    (map :idReadable)
+                                                    (str/join " "))
+                          :to-remove-not-fixed (->> to-remove
+                                                    (remove (fn [issue] (= "Fixed" (:state issue))))
+                                                    (map :idReadable)
+                                                    (str/join " "))
+                          :submitted           (when-not (#{"Polina Popova" "Not team members"} (:assignee db))
+                                                 (->> all-issues
+                                                      (filter (fn [issue] (= "Submitted" (:state issue))))
+                                                      (map :idReadable)
+                                                      (str/join " ")))
+                          :reassign            (->> all-issues-flatten
+                                                    (filter (fn [issue]
+                                                              (if (= "Not team members" (:assignee db))
+                                                                (contains? all-assignees (:assignee issue))
+                                                                (and (contains? all-assignees (:assignee issue)) (not= (:assignee db) (:assignee issue))))))
+                                                    (map :idReadable)
+                                                    (str/join " "))
+                          :not-parsed          (->> (:mentioned-in db)
+                                                    (remove (fn [m] (parsed-ids (:id m))))
+                                                    (map :idReadable))
+                          :not-planned         (->> all-issues
+                                                    (filter #(= "Planned for current release" (:header %)))
+                                                    (filter (fn [issue] (not-any? #(= "2025.1" %) (:planned-for issue))))
+                                                    (map :idReadable)
+                                                    (str/join " "))
+                          :duplicates          (->> all-issues
+                                                    (find-duplicates-by :id)
+                                                    (map :idReadable)
+                                                    (str/join " "))
                           }
                          )))
          (map (fn [entry]

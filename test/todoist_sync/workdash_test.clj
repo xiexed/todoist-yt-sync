@@ -8,27 +8,37 @@
     (is (= (list {:assignee    "Nicolay Mitropolsky"
                   :duplicates  "IJPL-173823 IJPL-173823"
                   :not-planned "IJPL-173823 IJPL-173482"
-                  :reassign    "IJPL-67420"}
-                 {:assignee  "Andrei Ogurtsov"
-                  :to-remove ["IJPL-66883"]}
-                 {:assignee "Petr Galunov"
-                  :reassign "IJPL-68912 IJPL-172289 IJPL-171960 IJPL-68781 IJPL-163578 IJPL-69178 IJPL-68973 IJPL-66930"}
+                  :reassign    "IJPL-67420"
+                  :submitted   "IJPL-162687 IJPL-172786 IDEA-364533 IJPL-175217 IJPL-175212 IJPL-68976"}
+                 {:assignee            "Andrei Ogurtsov"
+                  :submitted           "IJPL-161304"
+                  :to-remove           "IJPL-66883"
+                  :to-remove-not-fixed "IJPL-66883"}
+                 {:assignee  "Petr Galunov"
+                  :reassign  "IJPL-68912 IJPL-172289 IJPL-171960 IJPL-68781 IJPL-163578 IJPL-69178 IJPL-68973 IJPL-66930"
+                  :submitted "IJPL-68912 IJPL-69178 IJPL-68973 IJPL-67418"}
                  {:assignee "Vladimir Petrenko"}
-                 {:assignee    "Nurullokhon Gulomkodirov"
-                  :duplicates  "IJPL-172787 IJPL-172787"
-                  :not-planned "IJPL-166460"
-                  :reassign    "IJPL-66042 IJPL-66012 IJPL-66038 IJPL-66011 IJPL-174559 IJPL-159965 IJPL-158872"
-                  :to-remove   ["IJPL-166460"]}
-                 {:assignee "Andrey Belyaev"
-                  :reassign "IJPL-172142"}
-                 {:assignee "Nikita Katkov"}
+                 {:assignee            "Nurullokhon Gulomkodirov"
+                  :duplicates          "IJPL-172787 IJPL-172787"
+                  :not-planned         "IJPL-166460"
+                  :reassign            "IJPL-66042 IJPL-66012 IJPL-66038 IJPL-66011 IJPL-174559 IJPL-159965 IJPL-158872"
+                  :submitted           "IJPL-172787 IJPL-66016 IJPL-161577 IJPL-151224 IJPL-158811 IJPL-66097 IJPL-172787"
+                  :to-remove           "IJPL-166460"
+                  :to-remove-not-fixed "IJPL-166460"}
+                 {:assignee  "Andrey Belyaev"
+                  :reassign  "IJPL-172142"
+                  :submitted "IJPL-175400"}
+                 {:assignee  "Nikita Katkov"
+                  :submitted "IJPL-166355 IJPL-174666"}
                  {:assignee   "Yuri Trukhin"
-                  :duplicates "IJPL-174847 IJPL-174847"}
+                  :duplicates "IJPL-174847 IJPL-174847"
+                  :submitted  "IJPL-158334 IJPL-174847 IJPL-174847"}
                  {:assignee "Not team members"
                   :reassign "IJPL-175028"}
-                 {:assignee  "Polina Popova"
-                  :reassign  "IJPL-154100 IJPL-171685 IJPL-148634 IJPL-66781 IJPL-158178"
-                  :to-remove ["IJPL-154100"]})
+                 {:assignee            "Polina Popova"
+                  :reassign            "IJPL-154100 IJPL-171685 IJPL-148634 IJPL-66781 IJPL-158178"
+                  :to-remove           "IJPL-154100"
+                  :to-remove-not-fixed "IJPL-154100"})
            (wd/to-remove (edn/read-string (slurp "test/todoist_sync/workdash_data/load1.edn")))))))
 
 (deftest test-parse-articles
