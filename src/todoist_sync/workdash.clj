@@ -100,28 +100,28 @@
                              all-issues-flatten ((fn flat-issue [issues]
                                                    (mapcat (fn [issue] (cons issue (flat-issue (:inner issue)))) issues)) all-issues)
                              parsed-ids (into #{} (map :id all-issues-flatten))
-                             to-remove (->> all-issues
-                                            (filter (fn [issue] (or (:resolved issue) (= "Backlog" (:state issue))))))]
+                             to-remove (->> all-issues-flatten
+                                            (filter (fn [issue] (or (:resolved issue) (= "Backlog" (:state issue)) (= "Shelved" (:state issue))))))]
                          {
                           :assignee            (:assignee db)
                           :to-remove           (->> to-remove
-                                                    (map :idReadable)
+                                                    (map :idParsed)
                                                     (str/join " "))
                           :to-remove-not-fixed (->> to-remove
                                                     (remove (fn [issue] (= "Fixed" (:state issue))))
-                                                    (map :idReadable)
+                                                    (map :idParsed)
                                                     (str/join " "))
                           :submitted           (when-not (#{"Polina Popova" "Not team members"} (:assignee db))
-                                                 (->> all-issues
+                                                 (->> all-issues-flatten
                                                       (filter (fn [issue] (= "Submitted" (:state issue))))
-                                                      (map :idReadable)
+                                                      (map :idParsed)
                                                       (str/join " ")))
                           :reassign            (->> all-issues-flatten
                                                     (filter (fn [issue]
                                                               (if (= "Not team members" (:assignee db))
                                                                 (contains? all-assignees (:assignee issue))
                                                                 (and (contains? all-assignees (:assignee issue)) (not= (:assignee db) (:assignee issue))))))
-                                                    (map :idReadable)
+                                                    (map :idParsed)
                                                     (str/join " "))
                           :not-parsed          (->> (:mentioned-in db)
                                                     (remove (fn [m] (parsed-ids (:id m))))
@@ -129,11 +129,11 @@
                           :not-planned         (->> all-issues
                                                     (filter #(= "Planned for current release" (:header %)))
                                                     (filter (fn [issue] (not-any? #(= "2025.1" %) (:planned-for issue))))
-                                                    (map :idReadable)
+                                                    (map :idParsed)
                                                     (str/join " "))
                           :duplicates          (->> all-issues
                                                     (find-duplicates-by :id)
-                                                    (map :idReadable)
+                                                    (map :idParsed)
                                                     (str/join " "))
                           }
                          )))
