@@ -18,7 +18,7 @@
        (map #(select-keys % [:idReadable :id]))))
 
 
-(defrecord MdLine [type value prefix])
+(defrecord MdLine [type value full prefix])
 
 (defn parse-md-line [line]
   (let [pref (re-find #"^\s*[-*]?\s*" line)
@@ -26,10 +26,10 @@
         trimmed-line (.substring line pref-len)]
     (cond
       (s/starts-with? trimmed-line "#")
-      (->MdLine :header (s/replace-first trimmed-line #"^#\s*" "") 0)
+      (->MdLine :header (s/replace-first trimmed-line #"^#\s*" "") trimmed-line 0)
 
       (re-matches #"^\w+-\d+.*" trimmed-line)
-      (->MdLine :issue (first (s/split trimmed-line #"\s+")) pref-len)
+      (->MdLine :issue (first (s/split trimmed-line #"\s+")) trimmed-line pref-len)
 
       :else nil)))
 
@@ -42,6 +42,7 @@
 
          (= :issue (:type head))
          (let [item (u/non-zero-map :header header
+                                    :text (:full head)
                                     :idParsed (:value head))
                next-level (some-> (first tail) :prefix)]
            (if (and next-level (> next-level (:prefix head)))
@@ -72,13 +73,20 @@
   ;(map (fn [issue] (filter (fn [e] (#{"Assignee" "Planned for"} (:name e))) (yt-client/get-from-yt {:key yt-token} (str "issues/" issue "/customFields") {:fields "id,name,value(name, value, id)"}))))
   (let [issue-data (yt-client/get-from-yt {:key yt-token}
                                           (str "issues/" issue)
-                                          {:fields "id,idReadable,resolved,customFields(id,name,value(name, value, id))"})]
+                                          {:fields "id,idReadable,summary,resolved,customFields(id,name,value(name, value, id))"})]
     {:idReadable  (:idReadable issue-data)
+     :summary     (:summary issue-data)
      :id          (:id issue-data)
      :resolved    (:resolved issue-data)
      :assignee    (:name (custom-field issue-data "Assignee"))
      :state       (:name (custom-field issue-data "State"))
      :planned-for (map :name (custom-field issue-data "Planned for"))}))
+
+(defn render [issue]
+  (u/str-spaced (:idReadable issue)
+                (:summary issue)
+                (when-let [pf (not-empty (remove #(#{"Requested", "Backlog"} %) (:planned-for issue)))]
+                  (str "[" (str/join "," pf) "]"))))
 
 (defn load-dashboards-data [yt-token]
   (->> (load-dashboard-articles yt-token)
@@ -88,9 +96,11 @@
                  :idReadable   (:idReadable d)
                  :issues       (->> (parse-md-to-sections (:content loaded))
                                     (pmap (fn enhance [issue]
-                                            (merge issue
-                                                   (load-issue-data yt-token (:idParsed issue))
-                                                   (u/non-zero-map {:inner (not-empty (map enhance (:inner issue)))})))))
+                                            (let [loaded (load-issue-data yt-token (:idParsed issue))]
+                                              (merge issue
+                                                     loaded
+                                                     {:render (render loaded)}
+                                                     (u/non-zero-map {:inner (not-empty (map enhance (:inner issue)))}))))))
                  :mentioned-in (load-mentioned-in yt-token (:idReadable d))})))))
 
 (defn to-remove [loaded-data]
@@ -126,11 +136,9 @@
                           :not-parsed          (->> (:mentioned-in db)
                                                     (remove (fn [m] (parsed-ids (:id m))))
                                                     (map :idReadable))
-                          :not-planned         (->> all-issues
-                                                    (filter #(= "Planned for current release" (:header %)))
-                                                    (filter (fn [issue] (not-any? #(= "2025.1" %) (:planned-for issue))))
-                                                    (map :idParsed)
-                                                    (str/join " "))
+                          :outdated            (->> all-issues
+                                                    (filter (fn [issue] (not= (:text issue) (:render issue))))
+                                                    (map :render))
                           :duplicates          (->> all-issues
                                                     (find-duplicates-by :id)
                                                     (map :idParsed)
@@ -140,6 +148,5 @@
          (map (fn [entry]
                 (->> entry
                      (filter (fn [[k v]] (not (empty? v))))
-                     (into {}))))))
-  )
+                     (into {})))))))
 
