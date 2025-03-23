@@ -20,8 +20,11 @@
 
 (defrecord MdLine [type value full prefix])
 
+(def line-space-pattern #"^\s*[-*]?\s*")
+
 (defn parse-md-line [line]
-  (let [pref (re-find #"^\s*[-*]?\s*" line)
+  (let [line (s/replace line " " " ")
+        pref (re-find line-space-pattern line)
         pref-len (count pref)
         trimmed-line (.substring line pref-len)]
     (cond
@@ -53,7 +56,6 @@
              (cons item (collect-on-level tail header)))))
        nil))
    (->> (s/split-lines text)
-        (map #(s/replace % " " " "))
         (keep parse-md-line)) nil))
 
 (defn find-duplicates-by [criteria-fn coll]
@@ -71,9 +73,10 @@
 ; (map #(wd/load-issue-data my-yt-token %) (mapcat :issues (wd/parse-md-to-sections text)))
 (defn load-issue-data [yt-token issue]
   ;(map (fn [issue] (filter (fn [e] (#{"Assignee" "Planned for"} (:name e))) (yt-client/get-from-yt {:key yt-token} (str "issues/" issue "/customFields") {:fields "id,name,value(name, value, id)"}))))
-  (let [issue-data (yt-client/get-from-yt {:key yt-token}
-                                          (str "issues/" issue)
-                                          {:fields "id,idReadable,summary,resolved,customFields(id,name,value(name, value, id))"})]
+  (let [issue-data (->> (yt-client/get-from-yt {:key yt-token}
+                                               (str "issues/" issue)
+                                               {:fields "id,idReadable,summary,resolved,customFields(id,name,value(name, value, id))"})
+                        (u/enhance-error (str "issue:" issue)))]
     {:idReadable  (:idReadable issue-data)
      :summary     (:summary issue-data)
      :id          (:id issue-data)
@@ -81,6 +84,18 @@
      :assignee    (:name (custom-field issue-data "Assignee"))
      :state       (:name (custom-field issue-data "State"))
      :planned-for (map :name (custom-field issue-data "Planned for"))}))
+
+(defmacro record-issue-data-loads [filename & body]
+  `(let [old# load-issue-data
+         store# (atom {})
+         value# (with-redefs [load-issue-data (fn [yt-token# issue#]
+                                                (let [result# (old# yt-token# issue#)]
+                                                  (swap! store# assoc issue# result#)
+                                                  result#))]
+                  ~@body)]
+     (clojure.pprint/pprint (deref store#) (clojure.java.io/writer ~filename))
+     value#))
+
 
 (defn render [issue]
   (u/str-spaced (:idReadable issue)
@@ -150,3 +165,36 @@
                      (filter (fn [[k v]] (not (empty? v))))
                      (into {})))))))
 
+(defn patch-outdated [yt-token src]
+  (let [lines (str/split-lines src)
+        parsed-lines (->> lines
+                          (map (fn [line]
+                                 (when-let [parsed (parse-md-line line)]
+                                   (when (= :issue (:type parsed))
+                                     {:line  line
+                                      :issue (load-issue-data yt-token (:value parsed))
+                                      }))))
+                          (keep identity))]
+    (->> lines
+         (map (fn [line]
+                (if-let [matched (->> parsed-lines
+                                      (filter #(= (:line %) line))
+                                      first)]
+                  (let [spaces (re-find line-space-pattern line)
+                        rendered (render (:issue matched))]
+                    (str spaces rendered))
+                  line)))
+         (str/join "\n"))))
+
+(defn patch-dashboards [yt-token dir]
+  (doseq [article (load-dashboard-articles yt-token)]
+    (let [article (load-article yt-token (:id article))
+          assignee (:summary article)
+          content (:content article)
+          patched (patch-outdated yt-token content)]
+      (when (not= content patched)
+        (let [dir (clojure.java.io/file dir)]
+          (.mkdirs dir)
+          (spit (clojure.java.io/file dir (str assignee "-orig.md")) content)
+          (spit (clojure.java.io/file dir (str assignee "-patched.md")) patched))))
+    ))
