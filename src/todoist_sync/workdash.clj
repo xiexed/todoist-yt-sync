@@ -108,10 +108,10 @@
                  (:summary issue)
                  (not-empty
                    (str
-                     (when-let [pf (not-empty (:planned-for issue))]
-                       (str "[" (str/join "," pf) "]"))
                      (when (some #{:assignee} keys)
                        (str "[" (get-first-letters (:assignee issue)) "]"))
+                     (when-let [pf (not-empty (:planned-for issue))]
+                       (str "[" (str/join "," pf) "]"))
                      (when (and (some #{:state} keys) (not= "Open" (:state issue)))
                        (str "[" (:state issue) "]"))))))
 
@@ -179,26 +179,34 @@
                      (filter (fn [[k v]] (not (empty? v))))
                      (into {})))))))
 
-(defn patch-outdated [yt-token src keys]
-  (let [lines (str/split-lines src)
-        parsed-lines (->> lines
-                          (map (fn [line]
-                                 (when-let [parsed (parse-md-line line)]
-                                   (when (= :issue (:type parsed))
-                                     {:line  line
-                                      :issue (load-issue-data yt-token (:value parsed))
-                                      }))))
-                          (keep identity))]
-    (->> lines
-         (map (fn [line]
-                (if-let [matched (->> parsed-lines
-                                      (filter #(= (:line %) line))
-                                      first)]
-                  (let [spaces (re-find line-space-pattern line)
-                        rendered (render (:issue matched) keys)]
-                    (str spaces rendered))
-                  line)))
-         (str/join "\n"))))
+(defn patch-outdated
+  ([yt-token src render]
+   (let [lines (str/split-lines src)
+         parsed-lines (->> lines
+                           (map (fn [line]
+                                  (when-let [parsed (parse-md-line line)]
+                                    (when (= :issue (:type parsed))
+                                      {:line  line
+                                       :issue (load-issue-data yt-token (:value parsed))
+                                       }))))
+                           (keep identity))]
+     (->> lines
+          (map (fn [line]
+                 (if-let [matched (->> parsed-lines
+                                       (filter #(= (:line %) line))
+                                       first)]
+                   (let [spaces (re-find line-space-pattern line)
+                         rendered (render (:issue matched))]
+                     (str spaces rendered))
+                   line)))
+          (str/join "\n"))))
+  ([yt-token src] (patch-outdated yt-token src render)))
+
+(defn patch-outdated-plan [yt-token src]
+  (patch-outdated yt-token src
+                  (fn [issue]
+                    (render (update issue :planned-for
+                                    (fn [old] (if (empty? old) ["Not-planned"] (remove #(= "2025.2" %) old)))) [:assignee :state]))))
 
 (defn patch-dashboards [yt-token dir]
   (doseq [article (load-dashboard-articles yt-token)]
