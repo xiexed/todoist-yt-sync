@@ -36,10 +36,10 @@ IJPL-171685 kubectl tooltip flickering
 
 # Planned for current release
 
-IJPL-66896 Kubernetes: support debug command/ephemeral containers
+IJPL-66896 Kubernetes: support debug command/ephemeral containers [Requested]
 - IJPL-67420 Kubernetes: provide an easy way to run temporary Busybox pod in namespace [2025.1]
 
-IJPL-66806 Kubernetes. Debug support
+IJPL-66806 Kubernetes. Debug support [Requested]
 - IJPL-156717 Kubernetes: Attach debugger / profiler
 
 IJPL-162522 Kubernetes. Kubernetes.RefreshModel analytics reports noise [2025.1]

@@ -20,7 +20,7 @@
 
 (defrecord MdLine [type value full prefix])
 
-(def line-space-pattern #"^\s*[-*]?\s*")
+(def line-space-pattern #"^\s*[-*\d\.]*\s*")
 
 (defn parse-md-line [line]
   (let [line (s/replace line " " " ")
@@ -96,12 +96,26 @@
      (clojure.pprint/pprint (deref store#) (clojure.java.io/writer ~filename))
      value#))
 
+(defn get-first-letters [text]
+  (->> (str/split text #"\s+")
+       (map #(first %))
+       (filter some?)
+       (apply str)))
 
-(defn render [issue]
-  (u/str-spaced (:idReadable issue)
-                (:summary issue)
-                (when-let [pf (not-empty (remove #(#{"Requested", "Backlog"} %) (:planned-for issue)))]
-                  (str "[" (str/join "," pf) "]"))))
+(defn render
+  ([issue keys]
+   (u/str-spaced (:idReadable issue)
+                 (:summary issue)
+                 (not-empty
+                   (str
+                     (when-let [pf (not-empty (:planned-for issue))]
+                       (str "[" (str/join "," pf) "]"))
+                     (when (some #{:assignee} keys)
+                       (str "[" (get-first-letters (:assignee issue)) "]"))
+                     (when (and (some #{:state} keys) (not= "Open" (:state issue)))
+                       (str "[" (:state issue) "]"))))))
+
+  ([issue] (render issue [])))
 
 (defn load-dashboards-data [yt-token]
   (->> (load-dashboard-articles yt-token)
@@ -165,7 +179,7 @@
                      (filter (fn [[k v]] (not (empty? v))))
                      (into {})))))))
 
-(defn patch-outdated [yt-token src]
+(defn patch-outdated [yt-token src keys]
   (let [lines (str/split-lines src)
         parsed-lines (->> lines
                           (map (fn [line]
@@ -181,7 +195,7 @@
                                       (filter #(= (:line %) line))
                                       first)]
                   (let [spaces (re-find line-space-pattern line)
-                        rendered (render (:issue matched))]
+                        rendered (render (:issue matched) keys)]
                     (str spaces rendered))
                   line)))
          (str/join "\n"))))
