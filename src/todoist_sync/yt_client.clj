@@ -23,6 +23,13 @@
   ([conf path query params]
    (:body (yt-request conf :get path (assoc params :query-params query)))))
 
+(defn update-on-yt
+  ([conf path data]
+   (update-on-yt conf path data {}))
+  ([conf path data params]
+   (:body (yt-request conf :post path (assoc params :body (json/write-str data))))))
+
+
 (defn projects [conf] (get-from-yt conf "admin/projects" {:fields ["id,name,shortName,createdBy(login,name,id),leader(login,name,id)"]}))
 
 (def ^:dynamic *default-issue-fields* "id,numberInProject,project(shortName),summary,value(name),tags(name)")

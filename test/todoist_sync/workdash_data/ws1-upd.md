@@ -2,13 +2,13 @@
 
 IJPL-176233 Kubernetes. The resource group is collapsed on selection when WATCH is not permitted
 IJPL-175028 Kubernetes: improve watch api usage statistics
-IJPL-175482 Kubernetes: A/B Test for a separate Kubernetes toolwindow [2025.1]
+IJPL-175482 Kubernetes: A/B Test for a separate Kubernetes toolwindow **[2025.1]**
 IJPL-175520 Kubernetes. Exception when refresh action called using the shortcut in some tool windows
 IJPL-180189 Terraform FMT on autosave doesn't work in PHP Storm
-IJPL-164125 Terraform: T: Module$Companion.getModule: No module root for PsiDirectory on typing when looking for a relative module [2025.1]
+IJPL-164125 Terraform: T: Module$Companion.getModule: No module root for PsiDirectory on typing when looking for a relative module **[2025.1]**
 IJPL-173823 No completion when the custom JSON schema referenced in the YAML file
-IJPL-65348 Terraform.  Add Terraform icon to the Terraform Tools menu  [2024.2.X]
-IJPL-164360 QuickDoc Fus Reporting Fix [2024.3]
+IJPL-65348 Terraform.  Add Terraform icon to the Terraform Tools menu  **[2024.2.X]**
+IJPL-164360 QuickDoc Fus Reporting Fix **[2024.3]**
 IDEA-356011 Terraform. WSL. Format file fails with "No file or directory..." error
 IJPL-149378 Data Source settings, Kubernetes tab: settings are saved in 1/3 cases
 IJPL-157584 Rename Delete action and change text in the confirmation dialog
@@ -36,16 +36,16 @@ IJPL-171685 kubectl tooltip flickering
 
 # Planned for current release
 
-IJPL-66896 Kubernetes: support debug command/ephemeral containers [Requested]
-- IJPL-67420 Kubernetes: provide an easy way to run temporary Busybox pod in namespace [2025.1]
+IJPL-66896 Kubernetes: support debug command/ephemeral containers **[Requested]**
+- IJPL-67420 Kubernetes: provide an easy way to run temporary Busybox pod in namespace **[2025.1]**
 
-IJPL-66806 Kubernetes. Debug support [Requested]
+IJPL-66806 Kubernetes. Debug support **[Requested]**
 - IJPL-156717 Kubernetes: Attach debugger / profiler
 
-IJPL-162522 Kubernetes. Kubernetes.RefreshModel analytics reports noise [2025.1]
-IJPL-158211 NPE at com.intellij.kubernetes.view.ui.actions.KubernetesModelBasedDumbAwareAction.actionPerformed [2025.1]
-IJPL-155687 Add run configurations for Kubernetes configs [2025.1]
+IJPL-162522 Kubernetes. Kubernetes.RefreshModel analytics reports noise **[2025.1]**
+IJPL-158211 NPE at com.intellij.kubernetes.view.ui.actions.KubernetesModelBasedDumbAwareAction.actionPerformed **[2025.1]**
+IJPL-155687 Add run configurations for Kubernetes configs **[2025.1]**
 
-IJPL-64404 When defining a YAML schema locally, ensure the path is completed correctly [2025.1]
+IJPL-64404 When defining a YAML schema locally, ensure the path is completed correctly **[2025.1]**
 
-IJPL-67480 Kubernetes: show/choose active namespace from editor [2025.1]
+IJPL-67480 Kubernetes: show/choose active namespace from editor **[2025.1]**

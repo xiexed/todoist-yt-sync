@@ -13,6 +13,9 @@
 (defn load-article [yt-token article]
   (yt-client/get-from-yt {:key yt-token} (str "/articles/" article) {:fields "content,summary"}))
 
+(defn update-article [yt-token article-id text]
+  (yt-client/update-on-yt {:key yt-token} (str "/articles/" article-id) {:content text}))
+
 (defn load-mentioned-in [yt-token article]
   (->> (yt-client/issues {:key yt-token} (str "mentioned in: " article) {:fields "id,idReadable"})
        (map #(select-keys % [:idReadable :id]))))
@@ -110,10 +113,13 @@
                    (str
                      (when (some #{:assignee} keys)
                        (str "[" (get-first-letters (:assignee issue)) "]"))
-                     (when-let [pf (not-empty (:planned-for issue))]
-                       (str "[" (str/join "," pf) "]"))
-                     (when (and (some #{:state} keys) (not= "Open" (:state issue)))
-                       (str "[" (:state issue) "]"))))))
+                     (when-let [bold (not-empty
+                                       (str (when-let [pf (not-empty (:planned-for issue))]
+                                              (str "[" (str/join "," pf) "]"))
+                                            (when (and (some #{:state} keys) (not= "Open" (:state issue)))
+                                              (str "[" (:state issue) "]"))))]
+                       (str "**" bold "**"))
+                     ))))
 
   ([issue] (render issue [])))
 
@@ -207,6 +213,11 @@
                   (fn [issue]
                     (render (update issue :planned-for
                                     (fn [old] (if (empty? old) ["Not-planned"] (remove #(= "2025.2" %) old)))) [:assignee :state]))))
+
+(defn patch-outdated-plan-on-server [yt-token]
+  (let [original-content (:content (load-article yt-token "IDEA-A-2100662404"))
+        patched-content (patch-outdated-plan yt-token original-content)]
+    (update-article yt-token "IDEA-A-2100662410" patched-content)))
 
 (defn patch-dashboards [yt-token dir]
   (doseq [article (load-dashboard-articles yt-token)]
