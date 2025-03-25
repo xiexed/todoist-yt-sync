@@ -105,21 +105,23 @@
        (filter some?)
        (apply str)))
 
+(defn render-suffix [issue keys]
+  (not-empty
+    (str
+      (when (some #{:assignee} keys)
+        (str "[" (get-first-letters (:assignee issue)) "]"))
+      (when-let [bold (not-empty
+                        (str (when-let [pf (not-empty (:planned-for issue))]
+                               (str "[" (str/join "," pf) "]"))
+                             (when (and (some #{:state} keys) (not= "Open" (:state issue)))
+                               (str "[" (:state issue) "]"))))]
+        (str "**" bold "**")))))
+
 (defn render
   ([issue keys]
    (u/str-spaced (:idReadable issue)
                  (:summary issue)
-                 (not-empty
-                   (str
-                     (when (some #{:assignee} keys)
-                       (str "[" (get-first-letters (:assignee issue)) "]"))
-                     (when-let [bold (not-empty
-                                       (str (when-let [pf (not-empty (:planned-for issue))]
-                                              (str "[" (str/join "," pf) "]"))
-                                            (when (and (some #{:state} keys) (not= "Open" (:state issue)))
-                                              (str "[" (:state issue) "]"))))]
-                       (str "**" bold "**"))
-                     ))))
+                 (render-suffix issue keys)))
 
   ([issue] (render issue [])))
 
@@ -201,18 +203,20 @@
                  (if-let [matched (->> parsed-lines
                                        (filter #(= (:line %) line))
                                        first)]
-                   (let [spaces (re-find line-space-pattern line)
-                         rendered (render (:issue matched))]
-                     (str spaces rendered))
+                   (let [spaces (re-find line-space-pattern line)]
+                     (render (merge (:issue matched) {:line (:line matched) :spaces spaces})))
                    line)))
           (str/join "\n"))))
-  ([yt-token src] (patch-outdated yt-token src render)))
+  ([yt-token src] (patch-outdated yt-token src (fn [issue] (str (:spaces issue) (render issue))))))
 
 (defn patch-outdated-plan [yt-token src]
   (patch-outdated yt-token src
                   (fn [issue]
-                    (render (update issue :planned-for
-                                    (fn [old] (if (empty? old) ["Not-planned"] (remove #(= "2025.2" %) old)))) [:assignee :state]))))
+                    (str
+                      (:line issue)
+                      " ::"
+                      (render-suffix (update issue :planned-for
+                                             (fn [old] (if (empty? old) ["Not-planned"] (remove #(= "2025.2" %) old)))) [:assignee :state])))))
 
 (defn patch-outdated-plan-on-server [yt-token]
   (let [original-content (:content (load-article yt-token "IDEA-A-2100662404"))
