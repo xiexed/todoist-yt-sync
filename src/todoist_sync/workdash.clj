@@ -113,7 +113,7 @@
       (when-let [bold (not-empty
                         (str (when-let [pf (not-empty (:planned-for issue))]
                                (str "[" (str/join "," pf) "]"))
-                             (when (and (some #{:state} keys) (not= "Open" (:state issue)))
+                             (when (not= "Open" (:state issue))
                                (str "[" (:state issue) "]"))))]
         (str "**" bold "**")))))
 
