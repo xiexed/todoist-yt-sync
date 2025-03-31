@@ -109,12 +109,12 @@
   (not-empty
     (str
       (when (some #{:assignee} keys)
-        (str "[" (get-first-letters (:assignee issue)) "]"))
+        (str "\\[" (get-first-letters (:assignee issue)) "\\]"))
       (when-let [bold (not-empty
                         (str (when-let [pf (not-empty (:planned-for issue))]
-                               (str "[" (str/join "," pf) "]"))
+                               (str "\\[" (str/join "," pf) "\\]"))
                              (when (not= "Open" (:state issue))
-                               (str "[" (:state issue) "]"))))]
+                               (str "\\[" (:state issue) "\\]"))))]
         (str "**" bold "**")))))
 
 (defn render
@@ -173,9 +173,9 @@
                           :not-parsed          (->> (:mentioned-in db)
                                                     (remove (fn [m] (parsed-ids (:id m))))
                                                     (map :idReadable))
-                          :outdated            (->> all-issues
-                                                    (filter (fn [issue] (not= (:text issue) (:render issue))))
-                                                    (map :render))
+                          ;:outdated            (->> all-issues
+                          ;                          (filter (fn [issue] (not= (:text issue) (:render issue))))
+                          ;                          (map :render))
                           :duplicates          (->> all-issues
                                                     (find-duplicates-by :id)
                                                     (map :idParsed)
