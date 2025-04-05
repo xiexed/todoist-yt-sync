@@ -187,6 +187,9 @@
                      (filter (fn [[k v]] (not (empty? v))))
                      (into {})))))))
 
+(defn wd-line-render [issue]
+  (when-not (:resolved issue) (str (:spaces issue) (render issue))))
+
 (defn patch-outdated
   ([yt-token src render]
    (let [lines (str/split-lines src)
@@ -199,7 +202,7 @@
                                        }))))
                            (keep identity))]
      (->> lines
-          (map (fn [line]
+          (keep (fn [line]
                  (if-let [matched (->> parsed-lines
                                        (filter #(= (:line %) line))
                                        first)]
@@ -207,7 +210,7 @@
                      (render (merge (:issue matched) {:line (:line matched) :spaces spaces})))
                    line)))
           (str/join "\n"))))
-  ([yt-token src] (patch-outdated yt-token src (fn [issue] (str (:spaces issue) (render issue))))))
+  ([yt-token src] (patch-outdated yt-token src wd-line-render)))
 
 (defn patch-outdated-plan [yt-token src]
   (patch-outdated yt-token src
@@ -235,3 +238,14 @@
           (spit (clojure.java.io/file dir (str assignee "-orig.md")) content)
           (spit (clojure.java.io/file dir (str assignee "-patched.md")) patched))))
     ))
+
+(defn update-dashboards-on-server [yt-token]
+  (->> (load-dashboard-articles yt-token)
+       (keep (fn [article]
+               (let [article-data (load-article yt-token (:id article))
+                     content (:content article-data)
+                     patched (patch-outdated yt-token content)]
+                 (when (not= content patched)
+                   (update-article yt-token (:id article) patched)
+                   (::summary article)))))
+       (doall)))
