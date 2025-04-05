@@ -193,23 +193,25 @@
 (defn patch-outdated
   ([yt-token src render]
    (let [lines (str/split-lines src)
-         parsed-lines (->> lines
-                           (map (fn [line]
-                                  (when-let [parsed (parse-md-line line)]
-                                    (when (= :issue (:type parsed))
-                                      {:line  line
-                                       :issue (load-issue-data yt-token (:value parsed))
-                                       }))))
-                           (keep identity))]
-     (->> lines
-          (keep (fn [line]
-                 (if-let [matched (->> parsed-lines
-                                       (filter #(= (:line %) line))
-                                       first)]
-                   (let [spaces (re-find line-space-pattern line)]
-                     (render (merge (:issue matched) {:line (:line matched) :spaces spaces})))
-                   line)))
-          (str/join "\n"))))
+         processed-lines (map (fn [line]
+                                (let [parsed (parse-md-line line)]
+                                  (if (= :issue (:type parsed))
+                                    (let [issue (load-issue-data yt-token (:value parsed))
+                                          spaces (re-find line-space-pattern line)
+                                          new-line (render (merge issue
+                                                                  {:line line :spaces spaces}))]
+                                      {:line new-line
+                                       :diff (when (not= line new-line)
+                                               {:old line :new new-line})})
+                                    {:line line})))
+                              lines)
+         diffs (->> processed-lines
+                    (keep :diff)
+                    (filter some?))]
+     {:text  (->> processed-lines
+                  (keep :line)
+                  (str/join "\n"))
+      :diffs diffs}))
   ([yt-token src] (patch-outdated yt-token src wd-line-render)))
 
 (defn patch-outdated-plan [yt-token src]
@@ -223,8 +225,9 @@
 
 (defn patch-outdated-plan-on-server [yt-token]
   (let [original-content (:content (load-article yt-token "IDEA-A-2100662404"))
-        patched-content (patch-outdated-plan yt-token original-content)]
-    (update-article yt-token "IDEA-A-2100662410" patched-content)))
+        patched (patch-outdated-plan yt-token original-content)]
+    (update-article yt-token "IDEA-A-2100662410" (:text patched))
+    {:article "IDEA-A-2100662410" :diffs (:diffs patched)}))
 
 (defn patch-dashboards [yt-token dir]
   (doseq [article (load-dashboard-articles yt-token)]
@@ -232,11 +235,11 @@
           assignee (:summary article)
           content (:content article)
           patched (patch-outdated yt-token content)]
-      (when (not= content patched)
+      (when (not-empty (:diffs patched))
         (let [dir (clojure.java.io/file dir)]
           (.mkdirs dir)
           (spit (clojure.java.io/file dir (str assignee "-orig.md")) content)
-          (spit (clojure.java.io/file dir (str assignee "-patched.md")) patched))))
+          (spit (clojure.java.io/file dir (str assignee "-patched.md")) (:text patched)))))
     ))
 
 (defn update-dashboards-on-server [yt-token]
@@ -245,7 +248,9 @@
                (let [article-data (load-article yt-token (:id article))
                      content (:content article-data)
                      patched (patch-outdated yt-token content)]
-                 (when (not= content patched)
-                   (update-article yt-token (:id article) patched)
-                   (::summary article)))))
+                 (when (not-empty (:diffs patched))
+                   (update-article yt-token (:id article) (:text patched))
+                   {:id    (:idReadable article)
+                    :name  (:summary article)
+                    :diffs (:diffs patched)}))))
        (doall)))

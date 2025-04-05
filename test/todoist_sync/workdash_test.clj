@@ -237,5 +237,5 @@
 (deftest test-replace
   (testing "Test replace in wd"
     (with-redefs [wd/load-issue-data (use-dumped-load-issue-data "test/todoist_sync/workdash_data/ws1-issues.edn")]
-      (is (= (slurp "test/todoist_sync/workdash_data/ws1-upd.md")
+      (is (= (u/load-edn "test/todoist_sync/workdash_data/ws1-upd.edn")
              (wd/patch-outdated "no-token" (slurp "test/todoist_sync/workdash_data/ws1.md")))))))
