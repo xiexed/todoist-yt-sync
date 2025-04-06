@@ -131,6 +131,25 @@
                         <div v-if="output.data['duplicates']">Issues appears more than once:
                             <span v-for="issue in output.data['duplicates']" :key="issue">{{ issue }} </span>
                         </div>
+                        <div v-if="output.data && Array.isArray(output.data) && output.data.length > 0 && output.data[0].diffs">
+                            <div v-for="person in output.data" :key="person.id" class="q-mt-md">
+                                <q-card bordered>
+                                    <q-card-section class="bg-primary text-white">
+                                        <div class="text-h6">{{ person.name }}</div>
+                                    </q-card-section>
+                                    <q-card-section v-if="person.diffs && person.diffs.length > 0">
+                                            <li v-for="(diff, index) in person.diffs" :key="index">
+                                                    <div v-if="diff.new && diff.old" class="text-black" v-html="diff.new"></div>
+                                                    <div v-else-if="diff.new" class="text-positive" v-html="diff.new"></div>
+                                                    <div v-else-if="diff.old" class="text-negative" v-html="diff.old"></div>
+                                            </li>
+                                    </q-card-section>
+                                    <q-card-section v-else class="text-center text-grey">
+                                        No changes
+                                    </q-card-section>
+                                </q-card>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

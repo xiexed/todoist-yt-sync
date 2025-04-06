@@ -5,6 +5,7 @@
             [todoist-sync.processed-db :as db]
             [todoist-sync.texts-handler :as thd]
             [todoist-sync.todoist :as td]
+            [todoist-sync.workdash :as wd]
             [todoist-sync.yt-client :as yt-client])
   (:import (java.net URL)))
 
@@ -167,7 +168,11 @@
                                (str/join sprts))}))}
    {:name      "Post tasks to Todoist"
     :available #(:todoist %)
-    :handler   post-to-todoist}])
+    :handler   post-to-todoist}
+   {:name      "Update Dashboards"
+    :available #(:youtrack %)
+    :handler   (fn [{yt-token :youtrack} body]
+                 (wd/update-dashboards-on-server yt-token))}])
 
 (defn handler-id [{:keys [name]}] (str/replace name #"\s+" ""))
 
