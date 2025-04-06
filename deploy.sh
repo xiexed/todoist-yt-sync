@@ -6,7 +6,7 @@ docker run --rm \
     -v $(pwd):/app \
     -w /app \
     openjdk:11-slim \
-    bash -c "apt-get update && apt-get install -y leiningen && lein clean && lein ring uberwar"
+    bash -c "apt-get update && apt-get install -y leiningen && lein clean && lein ring uberwar && lein ring uberjar"
 
 # Check if the build was successful
 if [ ! -f "./target/todoist-sync-0.1.0-SNAPSHOT-standalone.war" ]; then

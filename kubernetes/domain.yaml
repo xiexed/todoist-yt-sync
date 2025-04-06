@@ -1,0 +1,24 @@
+# https://youtrack.jetbrains.com/articles/SRE-A-13/Outer-cluster-exposing-DNS-certificates-and-Google-OAuth
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: td-sync
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod    # Mandatory
+spec:
+  ingressClassName: nginx
+  tls:
+    - secretName: td-sync-labs-jb-gg-tls
+      hosts:
+        - td-sync.labs.jb.gg
+  rules:
+    - host: td-sync.labs.jb.gg
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web-server
+                port:
+                  number: 80    # Must match Service port, not container
