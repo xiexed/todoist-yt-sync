@@ -259,7 +259,7 @@
             },
             onSubmit() {
 
-                let task = {text: "Adding Scheduled Tag"};
+                let task = {text: this.taskSelected.label};
                 this.tasks.unshift(task)
 
                 this.$q.cookies.set('taskSelected', this.taskSelected.value)

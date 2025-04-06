@@ -172,7 +172,11 @@
    {:name      "Update Dashboards"
     :available #(:youtrack %)
     :handler   (fn [{yt-token :youtrack} body]
-                 (wd/update-dashboards-on-server yt-token))}])
+                 (wd/update-dashboards-on-server yt-token))}
+   {:name      "Update Plan"
+    :available #(:youtrack %)
+    :handler   (fn [{yt-token :youtrack} body]
+                 (wd/patch-outdated-plan-on-server yt-token))}])
 
 (defn handler-id [{:keys [name]}] (str/replace name #"\s+" ""))
 

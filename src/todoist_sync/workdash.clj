@@ -11,7 +11,7 @@
    (load-dashboard-articles yt-token "IDEA-A-2100662287")))
 
 (defn load-article [yt-token article]
-  (yt-client/get-from-yt {:key yt-token} (str "/articles/" article) {:fields "content,summary"}))
+  (yt-client/get-from-yt {:key yt-token} (str "/articles/" article) {:fields "idReadable,content,summary"}))
 
 (defn update-article [yt-token article-id text]
   (yt-client/update-on-yt {:key yt-token} (str "/articles/" article-id) {:content text}))
@@ -217,17 +217,23 @@
 (defn patch-outdated-plan [yt-token src]
   (patch-outdated yt-token src
                   (fn [issue]
-                    (str
-                      (:line issue)
-                      " ::"
-                      (render-suffix (update issue :planned-for
-                                             (fn [old] (if (empty? old) ["Not-planned"] (remove #(= "2025.2" %) old)))) [:assignee :state])))))
+                    (let [line (:line issue)
+                          parts (str/split line #" ::")
+                          base (str/join " ::" (butlast parts))
+                          suffix (render-suffix (update issue :planned-for
+                                                      (fn [old] (if (empty? old) ["Not-planned"] (remove #(= "2025.2" %) old)))) [:assignee :state])]
+                      (if (> (count parts) 1)
+                        (str base " ::" suffix)
+                        (str line " ::" suffix))))))
 
 (defn patch-outdated-plan-on-server [yt-token]
-  (let [original-content (:content (load-article yt-token "IDEA-A-2100662404"))
+  (let [article (load-article yt-token "IDEA-A-2100662404")
+        original-content (:content article)
         patched (patch-outdated-plan yt-token original-content)]
-    (update-article yt-token "IDEA-A-2100662410" (:text patched))
-    {:article "IDEA-A-2100662410" :diffs (:diffs patched)}))
+    (update-article yt-token (:idReadable article) (:text patched))
+    [{:id    (:idReadable article)
+      :name  (:summary article)
+      :diffs (:diffs patched)}]))
 
 (defn patch-dashboards [yt-token dir]
   (doseq [article (load-dashboard-articles yt-token)]
