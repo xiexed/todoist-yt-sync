@@ -12,6 +12,8 @@ Or deploy to production from ansible folder
     lein ring uberwar
     ansible-playbook -i inventories/uits-labs/inventory.yaml  playbook-deploy.yaml
 
+Or use the `deploy.sh` to keep the compatibility with old Java and Wildfly
+
 ## Start in dev-mode
 
 `-Dconfig.file=application-dev.conf`
