@@ -1,41 +1,60 @@
-{:diffs ({:new "IJPL-175028 Kubernetes: improve watch api usage statistics **\\[In progress\\]**"
-          :old "IJPL-175028 Kubernetes: improve watch api usage statistics"}
-         {:new nil
-          :old "IJPL-175482 Kubernetes: A/B Test for a separate Kubernetes toolwindow"}
-         {:new "IJPL-164125 Terraform: T: Module$Companion.getModule: No module root for PsiDirectory on typing when looking for a relative module **\\[2025.1\\]**"
-          :old "IJPL-164125 Terraform: T: Module$Companion .getModule: No module root for PsiDirectory on typing when looking for a relative module"}
-         {:new "IJPL-65348 Terraform.  Add Terraform icon to the Terraform Tools menu  **\\[2024.2.X\\]\\[Reopened\\]**"
-          :old "IJPL-65348 Terraform. Add Terraform icon to the Terraform Tools menu"}
-         {:new "IJPL-164360 QuickDoc Fus Reporting Fix **\\[2024.3\\]**"
-          :old "IJPL-164360 QuickDoc Fus Reporting Fix"}
-         {:new nil
-          :old "IJPL-64971 Should not adding space between double braces on yaml files"}
-         {:new "IJPL-162687 Kubernetes plugin selection doesn't use metadata.name to define the name of namespace **\\[Submitted\\]**"
-          :old "IJPL-162687 Kubernetes plugin selection doesn't use metadata.name to define the name of namespace"}
-         {:new "IJPL-165787 Akamai model is out of date"
-          :old "IJPL-165787 Terraform plugin, akamai model out of date"}
-         {:new "IJPL-162642 IDE doesn't prompt us to enable the telepresence traffic manager"
-          :old "IJPL-162642 IDE doesn't prompt us to enable the telepresence traffic manager"}
-         {:new "IJPL-171441 Telepresence: telepresence helm install doesn't work with contexts from non-default kubeconfigs"
-          :old "IJPL-171441 Telepresence: telepresence helm install doesn't work with contexts from non-default kubeconfigs"}
-         {:new "IJPL-166330 YAML file recognized as Kubernetes one couldn't be reassigned"
-          :old "IJPL-166330 YAML file recognized as Kubernetes one couldn't be reassigned"}
-         {:new "IJPL-66896 Kubernetes: support debug command/ephemeral containers **\\[Requested\\]**"
-          :old "IJPL-66896 Kubernetes: support debug command/ephemeral containers"}
-         {:new "- IJPL-67420 Kubernetes: provide an easy way to run temporary Busybox pod in namespace **\\[2025.1\\]**"
-          :old "- IJPL-67420 Kubernetes: provide an easy way to run temporary Busybox pod in namespace"}
-         {:new "IJPL-66806 Kubernetes. Debug support **\\[Requested\\]**"
-          :old "IJPL-66806 Kubernetes. Debug support"}
-         {:new "IJPL-162522 Kubernetes. Kubernetes.RefreshModel analytics reports noise **\\[2025.1\\]**"
-          :old "IJPL-162522 Kubernetes. Kubernetes.RefreshModel analytics reports noise"}
-         {:new "IJPL-158211 NPE at com.intellij.kubernetes.view.ui.actions.KubernetesModelBasedDumbAwareAction.actionPerformed **\\[2025.1\\]**"
-          :old "IJPL-158211 NPE at com.intellij.kubernetes.view.ui.actions.KubernetesModelBasedDumbAwareAction.actionPerformed"}
-         {:new "IJPL-155687 Add run configurations for Kubernetes configs **\\[2025.1\\]**"
-          :old "IJPL-155687 Add run configurations for Kubernetes configs"}
-         {:new "IJPL-64404 When defining a YAML schema locally, ensure the path is completed correctly **\\[2025.1\\]**"
-          :old "IJPL-64404 When defining a YAML schema locally, ensure the path is completed correctly"}
-         {:new "IJPL-67480 Kubernetes: show/choose active namespace from editor **\\[2025.1\\]\\[In Design\\]**"
-          :old "IJPL-67480 Kubernetes: show/choose active namespace from editor"})
+{:diffs ({:new    "IJPL-175028 Kubernetes: improve watch api usage statistics **\\[In progress\\]**"
+          :old    "IJPL-175028 Kubernetes: improve watch api usage statistics"
+          :suffix " **\\[In progress\\]**"}
+         {:new    nil
+          :old    "IJPL-175482 Kubernetes: A/B Test for a separate Kubernetes toolwindow"
+          :suffix " **\\[2025.1\\]\\[Fixed\\]**"}
+         {:new    "IJPL-164125 Terraform: T: Module$Companion.getModule: No module root for PsiDirectory on typing when looking for a relative module **\\[2025.1\\]**"
+          :old    "IJPL-164125 Terraform: T: Module$Companion .getModule: No module root for PsiDirectory on typing when looking for a relative module"
+          :suffix " **\\[2025.1\\]**"}
+         {:new    "IJPL-65348 Terraform.  Add Terraform icon to the Terraform Tools menu  **\\[2024.2.X\\]\\[Reopened\\]**"
+          :old    "IJPL-65348 Terraform. Add Terraform icon to the Terraform Tools menu"
+          :suffix " **\\[2024.2.X\\]\\[Reopened\\]**"}
+         {:new    "IJPL-164360 QuickDoc Fus Reporting Fix **\\[2024.3\\]**"
+          :old    "IJPL-164360 QuickDoc Fus Reporting Fix"
+          :suffix " **\\[2024.3\\]**"}
+         {:new    nil
+          :old    "IJPL-64971 Should not adding space between double braces on yaml files"
+          :suffix " **\\[Answered\\]**"}
+         {:new    "IJPL-162687 Kubernetes plugin selection doesn't use metadata.name to define the name of namespace **\\[Submitted\\]**"
+          :old    "IJPL-162687 Kubernetes plugin selection doesn't use metadata.name to define the name of namespace"
+          :suffix " **\\[Submitted\\]**"}
+         {:new    "IJPL-165787 Akamai model is out of date"
+          :old    "IJPL-165787 Terraform plugin, akamai model out of date"
+          :suffix nil}
+         {:new    "IJPL-162642 IDE doesn't prompt us to enable the telepresence traffic manager"
+          :old    "IJPL-162642 IDE doesn't prompt us to enable the telepresence traffic manager"
+          :suffix nil}
+         {:new    "IJPL-171441 Telepresence: telepresence helm install doesn't work with contexts from non-default kubeconfigs"
+          :old    "IJPL-171441 Telepresence: telepresence helm install doesn't work with contexts from non-default kubeconfigs"
+          :suffix nil}
+         {:new    "IJPL-166330 YAML file recognized as Kubernetes one couldn't be reassigned"
+          :old    "IJPL-166330 YAML file recognized as Kubernetes one couldn't be reassigned"
+          :suffix nil}
+         {:new    "IJPL-66896 Kubernetes: support debug command/ephemeral containers **\\[Requested\\]**"
+          :old    "IJPL-66896 Kubernetes: support debug command/ephemeral containers"
+          :suffix " **\\[Requested\\]**"}
+         {:new    "- IJPL-67420 Kubernetes: provide an easy way to run temporary Busybox pod in namespace **\\[2025.1\\]**"
+          :old    "- IJPL-67420 Kubernetes: provide an easy way to run temporary Busybox pod in namespace"
+          :suffix " **\\[2025.1\\]**"}
+         {:new    "IJPL-66806 Kubernetes. Debug support **\\[Requested\\]**"
+          :old    "IJPL-66806 Kubernetes. Debug support"
+          :suffix " **\\[Requested\\]**"}
+         {:new    "IJPL-162522 Kubernetes. Kubernetes.RefreshModel analytics reports noise **\\[2025.1\\]**"
+          :old    "IJPL-162522 Kubernetes. Kubernetes.RefreshModel analytics reports noise"
+          :suffix " **\\[2025.1\\]**"}
+         {:new    "IJPL-158211 NPE at com.intellij.kubernetes.view.ui.actions.KubernetesModelBasedDumbAwareAction.actionPerformed **\\[2025.1\\]**"
+          :old    "IJPL-158211 NPE at com.intellij.kubernetes.view.ui.actions.KubernetesModelBasedDumbAwareAction.actionPerformed"
+          :suffix " **\\[2025.1\\]**"}
+         {:new    "IJPL-155687 Add run configurations for Kubernetes configs **\\[2025.1\\]**"
+          :old    "IJPL-155687 Add run configurations for Kubernetes configs"
+          :suffix " **\\[2025.1\\]**"}
+         {:new    "IJPL-64404 When defining a YAML schema locally, ensure the path is completed correctly **\\[2025.1\\]**"
+          :old    "IJPL-64404 When defining a YAML schema locally, ensure the path is completed correctly"
+          :suffix " **\\[2025.1\\]**"}
+         {:new    "IJPL-67480 Kubernetes: show/choose active namespace from editor **\\[2025.1\\]\\[In Design\\]**"
+          :old    "IJPL-67480 Kubernetes: show/choose active namespace from editor"
+          :suffix " **\\[2025.1\\]\\[In Design\\]**"})
  :text  "# Active Backlog
 
 IJPL-176233 Kubernetes. The resource group is collapsed on selection when WATCH is not permitted

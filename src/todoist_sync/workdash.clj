@@ -113,9 +113,10 @@
 
 (defn render
   ([issue keys]
-   (u/str-spaced (:idReadable issue)
-                 (:summary issue)
-                 (render-suffix issue keys)))
+   (let [suffix (render-suffix issue keys)]
+     {:body   (u/str-spaced (:idReadable issue)
+                            (:summary issue))
+      :suffix (when suffix (str " " suffix))}))
 
   ([issue] (render issue [])))
 
@@ -182,7 +183,11 @@
                      (into {})))))))
 
 (defn wd-line-render [issue]
-  (when-not (:resolved issue) (str (:spaces issue) (render issue))))
+  (let [{:keys [body suffix]} (render issue)]
+    (if (:resolved issue)
+      {:suffix suffix}
+      {:suffix suffix
+       :body   body})))
 
 (defn patch-outdated
   ([yt-token src render]
@@ -192,11 +197,12 @@
                                   (if (= :issue (:type parsed))
                                     (let [issue (load-issue-data yt-token (:value parsed))
                                           spaces (re-find line-space-pattern line)
-                                          new-line (render (merge issue
-                                                                  {:line line :spaces spaces}))]
+                                          {:keys [body suffix]} (render (merge issue
+                                                                               {:line (str/replace-first line spaces "")}))
+                                          new-line (when body (str spaces body suffix))]
                                       {:line new-line
                                        :diff (when (not= line new-line)
-                                               {:old line :new new-line})})
+                                               {:old line :new new-line :suffix suffix})})
                                     {:line line})))
                               lines)
          diffs (->> processed-lines
@@ -215,10 +221,11 @@
                           parts (str/split line #" ::")
                           base (str/join " ::" (butlast parts))
                           suffix (render-suffix (update issue :planned-for
-                                                      (fn [old] (if (empty? old) ["Not-planned"] (remove #(= "2025.2" %) old)))) [:assignee :state])]
-                      (if (> (count parts) 1)
-                        (str base " ::" suffix)
-                        (str line " ::" suffix))))))
+                                                        (fn [old] (if (empty? old) ["Not-planned"] (remove #(= "2025.2" %) old)))) [:assignee :state])]
+                      {:suffix (str " ::" suffix)
+                       :body   (if (> (count parts) 1)
+                                 base
+                                 line)}))))
 
 (defn patch-outdated-plan-on-server [yt-token]
   (let [article (load-article yt-token "IDEA-A-2100662404")

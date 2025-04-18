@@ -141,7 +141,7 @@
                                             <li v-for="(diff, index) in person.diffs" :key="index">
                                                     <div v-if="diff.new && diff.old" class="text-black" v-html="diff.new"></div>
                                                     <div v-else-if="diff.new" class="text-positive" v-html="diff.new"></div>
-                                                    <div v-else-if="diff.old" class="text-negative" v-html="diff.old"></div>
+                                                    <div v-else-if="diff.old" class="text-negative" v-html="diff.old + diff.suffix"></div>
                                             </li>
                                     </q-card-section>
                                     <q-card-section v-else class="text-center text-grey">
