@@ -19,6 +19,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: web-server
+                name: todoist-sync
                 port:
-                  number: 80    # Must match Service port, not container
+                  number: 3000    # Must match Service port, not container
