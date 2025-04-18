@@ -1,6 +1,7 @@
 (ns todoist-sync.yt-client
   (:require [clj-http.client :as client]
-            [clojure.data.json :as json]))
+            [clojure.data.json :as json]
+            [todoist-sync.utils.utils :as u]))
 
 (defn mk-url [conf path] (str (conf :host "https://youtrack.jetbrains.com/api/") path))
 
@@ -58,11 +59,24 @@
    (get-from-yt conf (str "issues/" id) {:fields (or fields *default-issue-fields*)} params)))
 
 (defn activities
-  ([conf id] (activities id {}))
+  ([conf id] (activities conf id {}))
   ([conf id {:keys [fields categories] :as params}]
    (get-from-yt conf (str "issues/" id "/activities")
-                (merge params {:fields (or fields "author(name),field(name),added(name),removed(name)")
+                (merge params {:fields     (or fields "author(name),field(name,value),added(name,value),removed(name,value),timestamp")
                                :categories (or categories "CustomFieldCategory")}))))
+
+(defn clean-up-activity [act]
+  (let [simplify (fn [ar]
+                   (if (sequential? ar)
+                     (not-empty (map :name ar))
+                     ar)
+                   )]
+   (u/non-zero-map
+     :field (:name (:field act))
+     :author (:name (:author act))
+     :timestamp (:timestamp act)
+     :removed (simplify (:removed act))
+     :added (simplify (:added act)))))
 
 (defn me [yt-token]
   (get-from-yt {:key yt-token} "/users/me" {:fields ["id,login,ringId"]}))
@@ -70,15 +84,52 @@
 (defn issue-links [conf id]
   (get-from-yt conf (str "issues/" id "/links") {:fields "direction,linkType(name),issues(id,numberInProject,project(shortName),summary)"}))
 
+(defn custom-field [issue-data name]
+  (->> (:customFields issue-data)
+       (filter #(= name (:name %)))
+       (first)
+       :value))
+
+(defn clean-up [iss]
+  (dissoc (merge iss
+          (u/non-zero-map
+            :links (->> (:links iss)
+                        (filter #(not-empty (:issues %)))
+                        (map (fn [lnk]
+                               {:name      (get-in lnk [:linkType :name])
+                                :direction (:direction lnk)
+                                :issues    (map :idReadable (:issues lnk))}))
+                        (filter #(not= (:direction %) "INWARD"))
+                        (group-by :name)
+                        (u/map-vals (fn [e] (mapcat :issues e))))
+            :tags (->> (:tags iss) (map :name))
+            :activities (->> (:comments iss)
+                           (map (fn [comment]
+                                  {
+                                   :author (:name (:author comment))
+                                   :timestamp (:created comment)
+                                   :text (:text comment)
+                                   }
+                                  ))
+                             (concat (:activities iss))
+                             (sort-by :timestamp)
+                           )
+            :state (:name (custom-field iss "State"))
+            :reporter (:email (:reporter iss))
+            :priority (:name (custom-field iss "Priority"))
+            :type (:name (custom-field iss "Type"))
+            :subsystem (:name (custom-field iss "Subsystem"))
+            :assignee (:name (custom-field iss "Assignee"))
+            :planned-for (:name (custom-field iss "Planned for"))
+            )) :customFields :comments))
+
 (defn issues-and-links [conf query]
-  (->> (issues conf query {:fields "id,numberInProject,project(shortName),summary,value(name),links(direction,linkType(name),issues(id,numberInProject,project(shortName)))"})
-       (map (fn [iss]
-              (update iss :links
-                      (fn [links]
-                        (->> links
-                             (filter #(not-empty (:issues %)))
-                             (map (fn [lnk]
-                                    {:name      (get-in lnk [:linkType :name])
-                                     :direction (:direction lnk)
-                                     :issues    (map :id (:issues lnk))}))
-                             (filter #(not= (:direction %) "INWARD")))))))))
+  (->> (issues conf query {:fields "id,numberInProject,project(shortName),summary,value(name),links(direction,linkType(name),issues(idReadable,numberInProject,project(shortName)))"})
+       (map clean-up)))
+
+(defn issues-to-analyse [conf query]
+  (->> (issues conf query {:fields "idReadable,summary,description,reporter(email),value(name),tags(name),votes,resolved,updated,customFields(id,name,value(name, value, id)),links(direction,linkType(name),issues(idReadable,numberInProject,project(shortName))),comments(text,created,author(name))"})
+       (map (fn [issue]
+              (assoc issue :activities (map clean-up-activity (activities conf (:idReadable issue)))) ))
+       (map clean-up)))
+

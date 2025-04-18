@@ -1,6 +1,6 @@
 (ns todoist-sync.workdash
   (:require [clojure.string :as str]
-            [todoist-sync.yt-client :as yt-client]
+            [todoist-sync.yt-client :as yt-client :refer [custom-field]]
             [todoist-sync.utils.utils :as u]
             [clojure.string :as s]))
 
@@ -66,12 +66,6 @@
        (group-by criteria-fn)
        (filter (fn [[_ items]] (> (count items) 1)))
        (mapcat second)))
-
-(defn- custom-field [issue-data name]
-  (->> (:customFields issue-data)
-       (filter #(= name (:name %)))
-       (first)
-       :value))
 
 ; (map #(wd/load-issue-data my-yt-token %) (mapcat :issues (wd/parse-md-to-sections text)))
 (defn load-issue-data [yt-token issue]
