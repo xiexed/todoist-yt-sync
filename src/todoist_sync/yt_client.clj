@@ -133,3 +133,26 @@
               (assoc issue :activities (map clean-up-activity (activities conf (:idReadable issue)))) ))
        (map clean-up)))
 
+(defn add-issue-link
+  "Adds a link between two YouTrack issues using the Commands API
+   Parameters:
+   - conf: YouTrack configuration map with :key and :host
+   - source-issue-id: ID of the source issue or a sequence of source issue IDs
+   - target-issue-id: ID of the target issue
+   - link-type: Type of the link (e.g. 'relates to', 'depends on', 'subtask of', etc.)
+   
+   Returns the response from YouTrack API
+   
+   Examples:
+   ;; Link from one issue to another
+   (add-issue-link conf \"PROJ-123\" \"PROJ-456\" \"relates to\")
+   
+   ;; Link from multiple issues to one target
+   (add-issue-link conf [\"PROJ-123\" \"PROJ-124\"] \"OTHPROJ-789\" \"depends on\")"
+  [conf source-issue-id target-issue-id link-type]
+  (let [source-ids (if (sequential? source-issue-id) source-issue-id [source-issue-id])
+        command (str link-type " " target-issue-id)
+        command-data {:query command
+                      :issues (mapv (fn [id] {:idReadable id}) source-ids)}]
+    (update-on-yt conf "commands" command-data)))
+

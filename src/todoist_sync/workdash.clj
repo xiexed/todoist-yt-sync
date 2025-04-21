@@ -118,18 +118,20 @@
                                           {:keys [body suffix]} (render-fn (merge issue
                                                                                   {:line (str/replace-first line spaces "")}))
                                           new-line (when body (str spaces body suffix))]
-                                      {:line new-line
-                                       :diff (when (not= line new-line)
-                                               {:old line :new new-line :suffix suffix})})
+                                      {:line  new-line
+                                       :issue (:idReadable issue)
+                                       :diff  (when (not= line new-line)
+                                                {:old line :new new-line :suffix suffix})})
                                     {:line line})))
                               lines)
          diffs (->> processed-lines
                     (keep :diff)
                     (filter some?))]
-     {:text  (->> processed-lines
-                  (keep :line)
-                  (str/join "\n"))
-      :diffs diffs}))
+     {:text   (->> processed-lines
+                   (keep :line)
+                   (str/join "\n"))
+      :issues (map :issue processed-lines)
+      :diffs  diffs}))
   ([yt-token src] (patch-outdated yt-token src wd-line-render)))
 
 (defn patch-outdated-plan [yt-token src]
@@ -184,6 +186,7 @@
   (let [issue (yt-client/issue {:key yt-token} issue-id {:fields "description,summary,idReadable"})
         patched (patch-outdated yt-token (:description issue) [:planned-for :assignee :state])]
     (yt-client/update-on-yt {:key yt-token} (str "/issues/" issue-id) {:description (:text patched)})
+    (yt-client/add-issue-link {:key yt-token} (:issues patched) (:idReadable issue) "Epic link")
     {:id    (:idReadable issue)
      :name  (u/str-spaced (:idReadable issue) (:summary issue))
      :diffs (:diffs patched)}
