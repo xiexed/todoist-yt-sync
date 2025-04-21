@@ -190,15 +190,18 @@
        :body   body})))
 
 (defn patch-outdated
-  ([yt-token src render]
+  ([yt-token src renderer]
    (let [lines (str/split-lines src)
+         render-fn (cond
+                     (fn? renderer) renderer
+                     (vector? renderer) (fn [is] (render is renderer)))
          processed-lines (map (fn [line]
                                 (let [parsed (parse-md-line line)]
                                   (if (= :issue (:type parsed))
                                     (let [issue (load-issue-data yt-token (:value parsed))
                                           spaces (re-find line-space-pattern line)
-                                          {:keys [body suffix]} (render (merge issue
-                                                                               {:line (str/replace-first line spaces "")}))
+                                          {:keys [body suffix]} (render-fn (merge issue
+                                                                                  {:line (str/replace-first line spaces "")}))
                                           new-line (when body (str spaces body suffix))]
                                       {:line new-line
                                        :diff (when (not= line new-line)
@@ -260,4 +263,21 @@
                    {:id    (:idReadable article)
                     :name  (:summary article)
                     :diffs (:diffs patched)}))))
+       (doall)))
+
+(defn update-metaissue-on-server [yt-token issue-id]
+  (let [issue (yt-client/issue {:key yt-token} issue-id {:fields "description,summary,idReadable"})
+        patched (patch-outdated yt-token (:description issue) [:planned-for :assignee :state])]
+    (yt-client/update-on-yt {:key yt-token} (str "/issues/" issue-id) {:description (:text patched)})
+    {:id    (:idReadable issue)
+     :name  (u/str-spaced (:idReadable issue) (:summary issue))
+     :diffs (:diffs patched)}
+    ))
+
+(defn update-prioirity-lists-on-server [yt-token]
+  (->> (yt-client/issues {:key yt-token} "tag: {Priority-list}")
+       (keep (fn [issue]
+               (let [patched (update-metaissue-on-server yt-token (:id issue))]
+                 (when (not-empty (:diffs patched))
+                   patched))))
        (doall)))

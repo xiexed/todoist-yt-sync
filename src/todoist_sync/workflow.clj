@@ -176,7 +176,11 @@
    {:name      "Update Plan"
     :available #(:youtrack %)
     :handler   (fn [{yt-token :youtrack} body]
-                 (wd/patch-outdated-plan-on-server yt-token))}])
+                 (wd/patch-outdated-plan-on-server yt-token))}
+   {:name      "Update Priority lists"
+    :available #(:youtrack %)
+    :handler   (fn [{yt-token :youtrack} body]
+                 (wd/update-prioirity-lists-on-server yt-token))}])
 
 (defn handler-id [{:keys [name]}] (str/replace name #"\s+" ""))
 
