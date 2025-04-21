@@ -20,7 +20,6 @@
   (->> (yt-client/issues {:key yt-token} (str "mentioned in: " article) {:fields "id,idReadable"})
        (map #(select-keys % [:idReadable :id]))))
 
-
 (defrecord MdLine [type value full prefix])
 
 (def line-space-pattern #"^\s*[-*\d\.]*\s*")
@@ -38,28 +37,6 @@
       (->MdLine :issue (first (s/split trimmed-line #"\s+")) trimmed-line pref-len)
 
       :else nil)))
-
-(defn parse-md-to-sections [text]
-  ((fn collect-on-level [[head & tail :as input] header]
-     (if head
-       (cond
-         (= :header (:type head))
-         (recur tail (:value head))
-
-         (= :issue (:type head))
-         (let [item (u/non-zero-map :header header
-                                    :text (:full head)
-                                    :idParsed (:value head))
-               next-level (some-> (first tail) :prefix)]
-           (if (and next-level (> next-level (:prefix head)))
-             (let [[inner remaining] (split-with #(<= next-level (:prefix %)) tail)
-                   collected-inner (collect-on-level inner nil)
-                   item (assoc item :inner collected-inner)]
-               (cons item (collect-on-level remaining header)))
-             (cons item (collect-on-level tail header)))))
-       nil))
-   (->> (s/split-lines text)
-        (keep parse-md-line)) nil))
 
 (defn find-duplicates-by [criteria-fn coll]
   (->> coll
@@ -119,68 +96,6 @@
       :suffix (when suffix (str " " suffix))}))
 
   ([issue] (render issue [])))
-
-(defn load-dashboards-data [yt-token]
-  (->> (load-dashboard-articles yt-token)
-       (map (fn [d]
-              (let [loaded (load-article yt-token (:id d))]
-                {:assignee     (:summary loaded)
-                 :idReadable   (:idReadable d)
-                 :issues       (->> (parse-md-to-sections (:content loaded))
-                                    (pmap (fn enhance [issue]
-                                            (let [loaded (load-issue-data yt-token (:idParsed issue))]
-                                              (merge issue
-                                                     loaded
-                                                     {:render (render loaded)}
-                                                     (u/non-zero-map {:inner (not-empty (map enhance (:inner issue)))}))))))
-                 :mentioned-in (load-mentioned-in yt-token (:idReadable d))})))))
-
-(defn to-remove [loaded-data]
-  (let [all-assignees (into #{} (map :assignee loaded-data))]
-    (->> loaded-data
-         (map (fn [db] (let [all-issues (:issues db)
-                             all-issues-flatten ((fn flat-issue [issues]
-                                                   (mapcat (fn [issue] (cons issue (flat-issue (:inner issue)))) issues)) all-issues)
-                             parsed-ids (into #{} (map :id all-issues-flatten))
-                             to-remove (->> all-issues-flatten
-                                            (filter (fn [issue] (or (:resolved issue) (= "Backlog" (:state issue)) (= "Shelved" (:state issue))))))]
-                         {
-                          :assignee            (:assignee db)
-                          :to-remove           (->> to-remove
-                                                    (map :idParsed)
-                                                    (str/join " "))
-                          :to-remove-not-fixed (->> to-remove
-                                                    (remove (fn [issue] (= "Fixed" (:state issue))))
-                                                    (map :idParsed)
-                                                    (str/join " "))
-                          :submitted           (when-not (#{"Polina Popova" "Not team members"} (:assignee db))
-                                                 (->> all-issues-flatten
-                                                      (filter (fn [issue] (= "Submitted" (:state issue))))
-                                                      (map :idParsed)
-                                                      (str/join " ")))
-                          :reassign            (->> all-issues-flatten
-                                                    (filter (fn [issue]
-                                                              (if (= "Not team members" (:assignee db))
-                                                                (contains? all-assignees (:assignee issue))
-                                                                (and (contains? all-assignees (:assignee issue)) (not= (:assignee db) (:assignee issue))))))
-                                                    (map :idParsed)
-                                                    (str/join " "))
-                          :not-parsed          (->> (:mentioned-in db)
-                                                    (remove (fn [m] (parsed-ids (:id m))))
-                                                    (map :idReadable))
-                          ;:outdated            (->> all-issues
-                          ;                          (filter (fn [issue] (not= (:text issue) (:render issue))))
-                          ;                          (map :render))
-                          :duplicates          (->> all-issues
-                                                    (find-duplicates-by :id)
-                                                    (map :idParsed)
-                                                    (str/join " "))
-                          }
-                         )))
-         (map (fn [entry]
-                (->> entry
-                     (filter (fn [[k v]] (not (empty? v))))
-                     (into {})))))))
 
 (defn wd-line-render [issue]
   (let [{:keys [body suffix]} (render issue)]
