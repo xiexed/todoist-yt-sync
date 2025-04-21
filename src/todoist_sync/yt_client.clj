@@ -71,12 +71,12 @@
                      (not-empty (map :name ar))
                      ar)
                    )]
-   (u/non-zero-map
-     :field (:name (:field act))
-     :author (:name (:author act))
-     :timestamp (:timestamp act)
-     :removed (simplify (:removed act))
-     :added (simplify (:added act)))))
+    (u/non-zero-map
+      :field (:name (:field act))
+      :author (:name (:author act))
+      :timestamp (:timestamp act)
+      :removed (simplify (:removed act))
+      :added (simplify (:added act)))))
 
 (defn me [yt-token]
   (get-from-yt {:key yt-token} "/users/me" {:fields ["id,login,ringId"]}))
@@ -92,36 +92,36 @@
 
 (defn clean-up [iss]
   (dissoc (merge iss
-          (u/non-zero-map
-            :links (->> (:links iss)
-                        (filter #(not-empty (:issues %)))
-                        (map (fn [lnk]
-                               {:name      (get-in lnk [:linkType :name])
-                                :direction (:direction lnk)
-                                :issues    (map :idReadable (:issues lnk))}))
-                        (filter #(not= (:direction %) "INWARD"))
-                        (group-by :name)
-                        (u/map-vals (fn [e] (mapcat :issues e))))
-            :tags (->> (:tags iss) (map :name))
-            :activities (->> (:comments iss)
-                           (map (fn [comment]
-                                  {
-                                   :author (:name (:author comment))
-                                   :timestamp (:created comment)
-                                   :text (:text comment)
-                                   }
-                                  ))
-                             (concat (:activities iss))
-                             (sort-by :timestamp)
-                           )
-            :state (:name (custom-field iss "State"))
-            :reporter (:email (:reporter iss))
-            :priority (:name (custom-field iss "Priority"))
-            :type (:name (custom-field iss "Type"))
-            :subsystem (:name (custom-field iss "Subsystem"))
-            :assignee (:name (custom-field iss "Assignee"))
-            :planned-for (:name (custom-field iss "Planned for"))
-            )) :customFields :comments))
+                 (u/non-zero-map
+                   :links (->> (:links iss)
+                               (filter #(not-empty (:issues %)))
+                               (map (fn [lnk]
+                                      {:name      (get-in lnk [:linkType :name])
+                                       :direction (:direction lnk)
+                                       :issues    (map :idReadable (:issues lnk))}))
+                               (filter #(not= (:direction %) "INWARD"))
+                               (group-by :name)
+                               (u/map-vals (fn [e] (mapcat :issues e))))
+                   :tags (some->> (:tags iss) (map :name))
+                   :activities (some->> (:comments iss)
+                                        (map (fn [comment]
+                                               {
+                                                :author    (:name (:author comment))
+                                                :timestamp (:created comment)
+                                                :text      (:text comment)
+                                                }
+                                               ))
+                                        (concat (:activities iss))
+                                        (sort-by :timestamp)
+                                        )
+                   :state (:name (custom-field iss "State"))
+                   :reporter (:email (:reporter iss))
+                   :priority (:name (custom-field iss "Priority"))
+                   :type (:name (custom-field iss "Type"))
+                   :subsystem (:name (custom-field iss "Subsystem"))
+                   :assignee (:name (custom-field iss "Assignee"))
+                   :planned-for (:name (custom-field iss "Planned for"))
+                   )) :customFields :comments))
 
 (defn issues-and-links [conf query]
   (->> (issues conf query {:fields "id,numberInProject,project(shortName),summary,value(name),links(direction,linkType(name),issues(idReadable,numberInProject,project(shortName)))"})
@@ -130,7 +130,7 @@
 (defn issues-to-analyse [conf query]
   (->> (issues conf query {:fields "idReadable,summary,description,reporter(email),value(name),tags(name),votes,resolved,updated,customFields(id,name,value(name, value, id)),links(direction,linkType(name),issues(idReadable,numberInProject,project(shortName))),comments(text,created,author(name))"})
        (map (fn [issue]
-              (assoc issue :activities (map clean-up-activity (activities conf (:idReadable issue)))) ))
+              (assoc issue :activities (map clean-up-activity (activities conf (:idReadable issue))))))
        (map clean-up)))
 
 (defn add-issue-link
@@ -150,9 +150,9 @@
    ;; Link from multiple issues to one target
    (add-issue-link conf [\"PROJ-123\" \"PROJ-124\"] \"OTHPROJ-789\" \"depends on\")"
   [conf source-issue-id target-issue-id link-type]
-  (let [source-ids (if (sequential? source-issue-id) source-issue-id [source-issue-id])
+  (let [source-ids (if (seqable? source-issue-id) source-issue-id [source-issue-id])
         command (str link-type " " target-issue-id)
-        command-data {:query command
+        command-data {:query  command
                       :issues (mapv (fn [id] {:idReadable id}) source-ids)}]
     (update-on-yt conf "commands" command-data)))
 

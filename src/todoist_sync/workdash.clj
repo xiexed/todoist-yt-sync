@@ -183,12 +183,14 @@
        (doall)))
 
 (defn update-metaissue-on-server [yt-token issue-id]
-  (let [issue (yt-client/issue {:key yt-token} issue-id {:fields "description,summary,idReadable"})
-        patched (patch-outdated yt-token (:description issue) [:planned-for :assignee :state])]
+  (let [issue (yt-client/clean-up (yt-client/issue {:key yt-token} issue-id {:fields "idReadable,summary,description,links(direction,linkType(name),issues(idReadable,numberInProject,project(shortName)))"}))
+        patched (patch-outdated yt-token (:description issue) [:planned-for :assignee :state])
+        detected-from-patched (into #{} (:issues patched))]
     (yt-client/update-on-yt {:key yt-token} (str "/issues/" issue-id) {:description (:text patched)})
-    (yt-client/add-issue-link {:key yt-token} (:issues patched) (:idReadable issue) "Epic link")
+    (yt-client/add-issue-link {:key yt-token} detected-from-patched (:idReadable issue) "Epic link")
     {:id    (:idReadable issue)
      :name  (u/str-spaced (:idReadable issue) (:summary issue))
+     :missed (remove detected-from-patched (get-in issue [:links "Epic"]))
      :diffs (:diffs patched)}
     ))
 
@@ -196,6 +198,6 @@
   (->> (yt-client/issues {:key yt-token} "tag: {Priority-list}")
        (keep (fn [issue]
                (let [patched (update-metaissue-on-server yt-token (:id issue))]
-                 (when (not-empty (:diffs patched))
+                 (when (not-empty (concat (:diffs patched) (:missed patched)))
                    patched))))
        (doall)))

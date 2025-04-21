@@ -144,7 +144,23 @@
                                                     <div v-else-if="diff.old" class="text-negative" v-html="diff.old + diff.suffix"></div>
                                             </li>
                                     </q-card-section>
-                                    <q-card-section v-else class="text-center text-grey">
+                                    <q-card-section v-if="person.missed && person.missed.length > 0">
+                                        <q-expansion-item expand-separator
+                                                         :label="'Missed (' + person.missed.length + '):'"
+                                                         header-class="bg-primary text-white"
+                                                         expand-icon-class="text-white">
+                                            <q-separator></q-separator>
+                                            <div style="overflow-y: scroll; max-height: 40vh">
+                                                <li v-for="issue in person.missed" :key="issue">
+                                                    <a target="_blank" rel="noopener noreferrer"
+                                                       :href="'https://youtrack.jetbrains.com/issue/' + issue">
+                                                       {{ issue }}
+                                                    </a>
+                                                </li>
+                                            </div>
+                                        </q-expansion-item>
+                                    </q-card-section>
+                                    <q-card-section v-if="!person.diffs || person.diffs.length === 0 && (!person.missed || person.missed.length === 0)" class="text-center text-grey">
                                         No changes
                                     </q-card-section>
                                 </q-card>
