@@ -82,7 +82,7 @@
     (not-empty
       (str
         (when-let [type (:type issue)]
-          (str "\\[" (if ( = "Meta Issue" type) "Meta" (get-first-letters type)) "\\]"))
+          (str "\\[" (if (= "Meta Issue" type) "Meta" (get-first-letters type)) "\\]"))
         (when (some #{:assignee} keys)
           (str "\\[" (assignee) "\\]"))
         (when-let [bold (not-empty
@@ -190,8 +190,12 @@
        (doall)))
 
 (defn update-metaissue-on-server [yt-token issue-id]
-  (let [issue (yt-client/clean-up (yt-client/issue {:key yt-token} issue-id {:fields "idReadable,summary,description,links(direction,linkType(name),issues(idReadable,numberInProject,project(shortName)))"}))
-        patched (patch-outdated yt-token (:description issue) [:planned-for :assignee :state])
+  (let [issue (yt-client/clean-up (yt-client/issue {:key yt-token} issue-id {:fields "idReadable,summary,description,links(direction,linkType(name),issues(idReadable,numberInProject,project(shortName))),customFields(id,name,value(name, value, id))"}))
+        patched (patch-outdated yt-token (:description issue)
+                                (fn [iss] (render iss (->> [:planned-for
+                                                            (when (not= (:assignee iss) (:assignee issue)) :assignee)
+                                                            (when (not= (:state iss) (:state issue)) :state)]
+                                                           (filter some?) (vec)))))
         detected-from-patched (into #{} (:issues patched))]
     (yt-client/update-on-yt {:key yt-token} (str "/issues/" issue-id) {:description (:text patched)})
     (yt-client/add-issue-link {:key yt-token} detected-from-patched (:idReadable issue) "Epic link")

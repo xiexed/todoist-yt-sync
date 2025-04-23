@@ -120,6 +120,8 @@
                    :type (:name (custom-field iss "Type"))
                    :subsystem (:name (custom-field iss "Subsystem"))
                    :assignee (:name (custom-field iss "Assignee"))
+                   :state       (:name (custom-field iss "State"))
+                   :type        (:name (custom-field iss "Type"))
                    :planned-for (:name (custom-field iss "Planned for"))
                    )) :customFields :comments))
 
