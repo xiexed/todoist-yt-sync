@@ -91,7 +91,7 @@
                               (str "\\[" (assignee) "\\]"))
                             (when-let [pf (not-empty (:planned-for issue))]
                               (str "\\[" (str/join "," pf) "\\]"))
-                            (when (not= "Open" (:state issue))
+                            (when (some #{:state} keys)
                               (str "\\[" (:state issue) "\\]"))))]
           (str "**" bold "**"))))))
 
@@ -109,9 +109,8 @@
        :body   body})))
 
 (defn wd-conditional-assignee-renderer [main-assignee]
-  (fn [iss] (if (= main-assignee (:assignee iss))
-              (wd-line-render iss [])
-              (wd-line-render iss [:assignee-b]))))
+  (fn [iss] (wd-line-render iss [(when (not= main-assignee (:assignee iss)) :assignee-b)
+                                 (when (not= "Open" (:state iss)) :state)])))
 
 (defn patch-outdated [yt-token src renderer]
   (let [lines (str/split-lines src)
