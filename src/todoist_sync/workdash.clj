@@ -57,6 +57,7 @@
      :resolved    (:resolved issue-data)
      :assignee    (:name (custom-field issue-data "Assignee"))
      :state       (:name (custom-field issue-data "State"))
+     :type        (:name (custom-field issue-data "Type"))
      :planned-for (map :name (custom-field issue-data "Planned for"))}))
 
 (defmacro record-issue-data-loads [filename & body]
@@ -80,6 +81,8 @@
   (let [assignee #(or (some-> (:assignee issue) (get-first-letters)) "Unassigned")]
     (not-empty
       (str
+        (when-let [type (:type issue)]
+          (str "\\[" (if ( = "Meta Issue" type) "Meta" (get-first-letters type)) "\\]"))
         (when (some #{:assignee} keys)
           (str "\\[" (assignee) "\\]"))
         (when-let [bold (not-empty
