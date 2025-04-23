@@ -77,62 +77,66 @@
        (apply str)))
 
 (defn render-suffix [issue keys]
-  (not-empty
-    (str
-      (when (some #{:assignee} keys)
-        (str "\\[" (get-first-letters (:assignee issue)) "\\]"))
-      (when-let [bold (not-empty
-                        (str (when-let [pf (not-empty (:planned-for issue))]
-                               (str "\\[" (str/join "," pf) "\\]"))
-                             (when (not= "Open" (:state issue))
-                               (str "\\[" (:state issue) "\\]"))))]
-        (str "**" bold "**")))))
+  (let [assignee #(or (some-> (:assignee issue) (get-first-letters)) "Unassigned")]
+    (not-empty
+      (str
+        (when (some #{:assignee} keys)
+          (str "\\[" (assignee) "\\]"))
+        (when-let [bold (not-empty
+                          (str
+                            (when (some #{:assignee-b} keys)
+                              (str "\\[" (assignee) "\\]"))
+                            (when-let [pf (not-empty (:planned-for issue))]
+                              (str "\\[" (str/join "," pf) "\\]"))
+                            (when (not= "Open" (:state issue))
+                              (str "\\[" (:state issue) "\\]"))))]
+          (str "**" bold "**"))))))
 
-(defn render
-  ([issue keys]
-   (let [suffix (render-suffix issue keys)]
-     {:body   (u/str-spaced (:idReadable issue)
-                            (:summary issue))
-      :suffix (when suffix (str " " suffix))}))
+(defn render [issue keys]
+  (let [suffix (render-suffix issue keys)]
+    {:body   (u/str-spaced (:idReadable issue)
+                           (:summary issue))
+     :suffix (when suffix (str " " suffix))}))
 
-  ([issue] (render issue [])))
-
-(defn wd-line-render [issue]
-  (let [{:keys [body suffix]} (render issue)]
+(defn wd-line-render [issue keys]
+  (let [{:keys [body suffix]} (render issue keys)]
     (if (:resolved issue)
       {:suffix suffix}
       {:suffix suffix
        :body   body})))
 
-(defn patch-outdated
-  ([yt-token src renderer]
-   (let [lines (str/split-lines src)
-         render-fn (cond
-                     (fn? renderer) renderer
-                     (vector? renderer) (fn [is] (render is renderer)))
-         processed-lines (map (fn [line]
-                                (let [parsed (parse-md-line line)]
-                                  (if (= :issue (:type parsed))
-                                    (let [issue (load-issue-data yt-token (:value parsed))
-                                          spaces (re-find line-space-pattern line)
-                                          {:keys [body suffix]} (render-fn (merge issue
-                                                                                  {:line (str/replace-first line spaces "")}))
-                                          new-line (when body (str spaces body suffix))]
-                                      {:line  new-line
-                                       :issue (:idReadable issue)
-                                       :diff  (when (not= line new-line)
-                                                {:old line :new new-line :suffix suffix})})
-                                    {:line line})))
-                              lines)
-         diffs (->> processed-lines
-                    (keep :diff)
-                    (filter some?))]
-     {:text   (->> processed-lines
-                   (keep :line)
-                   (str/join "\n"))
-      :issues (map :issue processed-lines)
-      :diffs  diffs}))
-  ([yt-token src] (patch-outdated yt-token src wd-line-render)))
+(defn wd-conditional-assignee-renderer [main-assignee]
+  (fn [iss] (if (= main-assignee (:assignee iss))
+              (wd-line-render iss [])
+              (wd-line-render iss [:assignee-b]))))
+
+(defn patch-outdated [yt-token src renderer]
+  (let [lines (str/split-lines src)
+        render-fn (cond
+                    (fn? renderer) renderer
+                    (vector? renderer) (fn [is] (render is renderer)))
+        processed-lines (map (fn [line]
+                               (let [parsed (parse-md-line line)]
+                                 (if (= :issue (:type parsed))
+                                   (let [issue (load-issue-data yt-token (:value parsed))
+                                         spaces (re-find line-space-pattern line)
+                                         {:keys [body suffix]} (render-fn (merge issue
+                                                                                 {:line (str/replace-first line spaces "")}))
+                                         new-line (when body (str spaces body suffix))]
+                                     {:line  new-line
+                                      :issue (:idReadable issue)
+                                      :diff  (when (not= line new-line)
+                                               {:old line :new new-line :suffix suffix})})
+                                   {:line line})))
+                             lines)
+        diffs (->> processed-lines
+                   (keep :diff)
+                   (filter some?))]
+    {:text   (->> processed-lines
+                  (keep :line)
+                  (str/join "\n"))
+     :issues (keep :issue processed-lines)
+     :diffs  diffs}))
 
 (defn patch-outdated-plan [yt-token src]
   (patch-outdated yt-token src
@@ -161,7 +165,7 @@
     (let [article (load-article yt-token (:id article))
           assignee (:summary article)
           content (:content article)
-          patched (patch-outdated yt-token content)]
+          patched (patch-outdated yt-token content (wd-conditional-assignee-renderer (:summary article)))]
       (when (not-empty (:diffs patched))
         (let [dir (clojure.java.io/file dir)]
           (.mkdirs dir)
@@ -174,7 +178,7 @@
        (keep (fn [article]
                (let [article-data (load-article yt-token (:id article))
                      content (:content article-data)
-                     patched (patch-outdated yt-token content)]
+                     patched (patch-outdated yt-token content (wd-conditional-assignee-renderer (:summary article)))]
                  (when (not-empty (:diffs patched))
                    (update-article yt-token (:id article) (:text patched))
                    {:id    (:idReadable article)
@@ -188,10 +192,10 @@
         detected-from-patched (into #{} (:issues patched))]
     (yt-client/update-on-yt {:key yt-token} (str "/issues/" issue-id) {:description (:text patched)})
     (yt-client/add-issue-link {:key yt-token} detected-from-patched (:idReadable issue) "Epic link")
-    {:id    (:idReadable issue)
-     :name  (u/str-spaced (:idReadable issue) (:summary issue))
+    {:id     (:idReadable issue)
+     :name   (u/str-spaced (:idReadable issue) (:summary issue))
      :missed (remove detected-from-patched (get-in issue [:links "Epic"]))
-     :diffs (:diffs patched)}
+     :diffs  (:diffs patched)}
     ))
 
 (defn update-prioirity-lists-on-server [yt-token]
