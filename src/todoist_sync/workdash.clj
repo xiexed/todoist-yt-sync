@@ -198,16 +198,18 @@
         detected-from-patched (into #{} (:issues patched))]
     (yt-client/update-on-yt {:key yt-token} (str "/issues/" issue-id) {:description (:text patched)})
     (yt-client/add-issue-link {:key yt-token} detected-from-patched (:idReadable issue) "Epic link")
-    {:id     (:idReadable issue)
-     :name   (u/str-spaced (:idReadable issue) (:summary issue))
-     :missed (remove detected-from-patched (get-in issue [:links "Epic"]))
-     :diffs  (:diffs patched)}
+    {:id                    (:idReadable issue)
+     :name                  (u/str-spaced (:idReadable issue) (:summary issue))
+     :missed                (remove detected-from-patched (get-in issue [:links "Epic"]))
+     :detected-from-patched detected-from-patched
+     :diffs                 (:diffs patched)}
     ))
 
 (defn update-prioirity-lists-on-server [yt-token]
-  (->> (yt-client/issues {:key yt-token} "tag: {Priority-list}")
-       (keep (fn [issue]
-               (let [patched (update-metaissue-on-server yt-token (:id issue))]
+  (let [update-result (->> (yt-client/issues {:key yt-token} "tag: {Priority-list}")
+                           (keep (fn [issue] (update-metaissue-on-server yt-token (:id issue)))))]
+    (yt-client/command {:key yt-token} (mapcat :detected-from-patched update-result) "add tag: has-priority-list")
+    (->> update-result
+         (keep (fn [patched]
                  (when (not-empty (concat (:diffs patched) (:missed patched)))
-                   patched))))
-       (doall)))
+                   patched))))))

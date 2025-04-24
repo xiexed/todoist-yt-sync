@@ -120,8 +120,8 @@
                    :type (:name (custom-field iss "Type"))
                    :subsystem (:name (custom-field iss "Subsystem"))
                    :assignee (:name (custom-field iss "Assignee"))
-                   :state       (:name (custom-field iss "State"))
-                   :type        (:name (custom-field iss "Type"))
+                   :state (:name (custom-field iss "State"))
+                   :type (:name (custom-field iss "Type"))
                    :planned-for (:name (custom-field iss "Planned for"))
                    )) :customFields :comments))
 
@@ -135,26 +135,13 @@
               (assoc issue :activities (map clean-up-activity (activities conf (:idReadable issue))))))
        (map clean-up)))
 
-(defn add-issue-link
-  "Adds a link between two YouTrack issues using the Commands API
-   Parameters:
-   - conf: YouTrack configuration map with :key and :host
-   - source-issue-id: ID of the source issue or a sequence of source issue IDs
-   - target-issue-id: ID of the target issue
-   - link-type: Type of the link (e.g. 'relates to', 'depends on', 'subtask of', etc.)
-   
-   Returns the response from YouTrack API
-   
-   Examples:
-   ;; Link from one issue to another
-   (add-issue-link conf \"PROJ-123\" \"PROJ-456\" \"relates to\")
-   
-   ;; Link from multiple issues to one target
-   (add-issue-link conf [\"PROJ-123\" \"PROJ-124\"] \"OTHPROJ-789\" \"depends on\")"
-  [conf source-issue-id target-issue-id link-type]
+(defn command [conf source-issue-id cmd]
   (let [source-ids (if (seqable? source-issue-id) source-issue-id [source-issue-id])
-        command (str link-type " " target-issue-id)
-        command-data {:query  command
+        command-data {:query  cmd
                       :issues (mapv (fn [id] {:idReadable id}) source-ids)}]
-    (update-on-yt conf "commands" command-data)))
+    (when (not-empty source-ids)
+      (update-on-yt conf "commands" command-data))))
+
+(defn add-issue-link [conf source-issue-id target-issue-id link-type]
+  (command conf source-issue-id (str link-type " " target-issue-id)))
 
