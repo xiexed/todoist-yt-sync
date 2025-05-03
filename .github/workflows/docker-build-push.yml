@@ -14,6 +14,7 @@ env:
   REGISTRY: registry.jetbrains.team
   REGISTRY_PATH: p/td-sync/containers
   IMAGE_NAME: td-sync
+  # You can update these values to match your specific registry path and image name
 
 jobs:
   build-and-push:
@@ -31,7 +32,16 @@ jobs:
         with:
           java-version: '11'
           distribution: 'temurin'
-          cache: 'maven'
+          
+      # Leiningen is used for Clojure projects instead of Maven
+      - name: Install Leiningen
+        uses: DeLaGuardo/setup-clojure@10.1
+        with:
+          lein: 2.9.10
+      
+      # Run compile to verify the code builds successfully
+      - name: Compile Clojure Code
+        run: lein compile
 
       # Login to JetBrains Docker registry
       - name: Login to JetBrains Docker Registry
@@ -61,12 +71,14 @@ jobs:
 
       # Build and push the Docker image
       - name: Build and push Docker image
+        id: build-and-push
         uses: docker/build-push-action@v4
         with:
           context: .
           platforms: linux/amd64
           push: true
           tags: ${{ env.TAGS }}
+          # These cache settings help speed up builds
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.REGISTRY_PATH }}/${{ env.IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.REGISTRY_PATH }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
 
