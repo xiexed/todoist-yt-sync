@@ -69,7 +69,7 @@ jobs:
             echo "TAGS=${REGISTRY}/${REGISTRY_PATH}/${IMAGE_NAME}:sha-${SHA},${REGISTRY}/${REGISTRY_PATH}/${IMAGE_NAME}:latest" >> $GITHUB_ENV
           fi
 
-      # Build and push the Docker image
+      # Build and push the Docker image without cache
       - name: Build and push Docker image
         id: build-and-push
         uses: docker/build-push-action@v4
@@ -78,9 +78,6 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ env.TAGS }}
-          # These cache settings help speed up builds
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.REGISTRY_PATH }}/${{ env.IMAGE_NAME }}:buildcache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.REGISTRY_PATH }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
 
       - name: Image digest
         run: echo "Image has been pushed with digest ${{ steps.build-and-push.outputs.digest }}"
