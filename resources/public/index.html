@@ -53,6 +53,17 @@
                         <div v-if="output.data['text-out']">
                             <pre @click.native="$event.target.select()">{{ output.data['text-out'] }}</pre>
                         </div>
+                        <div v-if="output.data['download-id']" class="q-pa-md text-center">
+                            <p v-if="output.data.message">{{ output.data.message }}</p>
+                            <q-btn 
+                                color="primary" 
+                                icon="download" 
+                                label="Download Analysis" 
+                                type="a" 
+                                :href="'/download/' + output.data['download-id']" 
+                                target="_blank"
+                            ></q-btn>
+                        </div>
                         <div v-if="output.data['issues-added']">Issues tag was added to
                             <li v-for="issue in output.data['issues-added']" :key="issue">
                                 <a target="_blank" rel="noopener noreferrer"
@@ -210,6 +221,10 @@
                                  v-if="taskSelected && taskSelected.value === 'PosttaskstoTodoist'">
                                 <q-checkbox v-model="settings['single-task']" label="Send as single task" stack-label></q-checkbox>
                             </div>
+                            <div class="q-tab-panel"
+                                 v-if="taskSelected && taskSelected.value === 'ExportIssues'">
+                                <q-input v-model="settings.query" label="YouTrack Query" stack-label></q-input>
+                            </div>
                         </q-expansion-item>
                         <q-editor label="Tasks to add" v-model="text" filled type="textarea"
                                   max-height="40vh"></q-editor>
@@ -279,6 +294,7 @@
                 this.tasks.unshift(task)
 
                 this.$q.cookies.set('taskSelected', this.taskSelected.value)
+                // Regular JSON API call for all handlers
                 fetch("/json/do-task", {
                     method: 'POST',
                     headers: {

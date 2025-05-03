@@ -14,6 +14,7 @@
             [ring.middleware.json :refer [wrap-json-response wrap-json-body]]
             [ring.middleware.session.memory :as ses-mem]
             [promesa.core :as p]
+            [clojure.data.json :as dj]
             [clojure.string :as str])
   (:import (com.typesafe.config ConfigFactory)
            (org.joda.time DateTime)
@@ -53,17 +54,30 @@
                                    (merge (->> tokens (map (fn [[k v]] [k (some? v)])) (into {}))
                                           {:task-options (workflow/handlers-available tokens)}))))
                  (POST "/do-task" request
-                   (reset! last-sent-text (:text (request :body)))
-                   (let [task-id (get-in request [:body :task :value])]
+                   (let [body-data (:body request)
+                         _ (when-let [txt (:text body-data)]
+                             (reset! last-sent-text txt))
+                         task-id (get-in body-data [:task :value])]
                      (if-let [h (workflow/handler-by-id task-id)]
-                       (let [value (h (tokens request) (:body request))]
+                       (let [value (h (tokens request) body-data)]
                          (rur/response value))
                        (rur/bad-request (str "No task " task-id))))))
                (wrap-json-response)
                (wrap-json-body {:keywords? true})))
 
+(defn download-file [file-id]
+  (let [filename (str file-id ".json")
+        temp-dir (java.io.File. (System/getProperty "java.io.tmpdir") "todoist-sync-exports")
+        file (java.io.File. temp-dir filename)]
+    (if (.exists file)
+      (-> (rur/response (slurp file))
+          (rur/content-type "application/json")
+          (rur/header "Content-Disposition" (str "attachment; filename=\"" filename "\"")))
+      (rur/not-found (str "File " file-id " not found")))))
+
 (defroutes app-routes
            (GET "/" [] (some-> (rur/resource-response "/index.html" {:root "public"}) (rur/content-type "text/html")))
+           (GET "/download/:file-id" [file-id] (download-file file-id))
            (route/resources "/")
            json-api
            (POST "/post-task" [text :as request]

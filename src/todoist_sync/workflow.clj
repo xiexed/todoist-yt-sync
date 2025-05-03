@@ -2,12 +2,15 @@
   (:require [clojure.data.json :as json]
             [clojure.set :as set]
             [clojure.string :as str]
+            [clojure.java.io :as io]
             [todoist-sync.processed-db :as db]
             [todoist-sync.texts-handler :as thd]
             [todoist-sync.todoist :as td]
             [todoist-sync.workdash :as wd]
             [todoist-sync.yt-client :as yt-client])
-  (:import (java.net URL)))
+  (:import (org.jsoup Jsoup))
+  (:import (java.net URL)
+           (org.jsoup Jsoup)))
 
 (defn to-id-and-summary [resp]
   {:issue   (or (:idReadable resp) (str (get-in resp [:project :shortName]) "-" (:numberInProject resp)))
@@ -180,7 +183,25 @@
    {:name      "Update Priority lists"
     :available #(:youtrack %)
     :handler   (fn [{yt-token :youtrack} body]
-                 (wd/update-prioirity-lists-on-server yt-token))}])
+                 (wd/update-prioirity-lists-on-server yt-token))}
+   {:name      "Export Issues"
+    :available #(:youtrack %)
+    :handler   (fn [{yt-token :youtrack} {:keys [settings text]}]
+                 (let [query (if (not-empty text) 
+                               (.text (Jsoup/parseBodyFragment text))
+                               (or (:query settings) yt-client/default-query))
+                       _ (println "query:" query)
+                       issues (yt-client/issues-to-analyse {:key yt-token} query)
+                       timestamp (System/currentTimeMillis)
+                       file-id (str "issues-analysis-" timestamp)
+                       filename (str file-id ".json")
+                       temp-dir (io/file (System/getProperty "java.io.tmpdir") "todoist-sync-exports")
+                       _ (when-not (.exists temp-dir)
+                           (.mkdirs temp-dir))
+                       temp-file (io/file temp-dir filename)
+                       _ (spit temp-file (json/write-str issues))]
+                   {:download-id file-id
+                    :message (str "Analysis complete. " (count issues) " issues found.")}))}])
 
 (defn handler-id [{:keys [name]}] (str/replace name #"\s+" ""))
 

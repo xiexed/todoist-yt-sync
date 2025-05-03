@@ -131,6 +131,7 @@
 
 (defn issues-to-analyse [conf query]
   (->> (issues conf query {:fields "idReadable,summary,description,reporter(email),value(name),tags(name),votes,resolved,updated,customFields(id,name,value(name, value, id)),links(direction,linkType(name),issues(idReadable,numberInProject,project(shortName))),comments(text,created,author(name))"})
+       (take 1000)
        (map (fn [issue]
               (assoc issue :activities (map clean-up-activity (activities conf (:idReadable issue))))))
        (map clean-up)))
