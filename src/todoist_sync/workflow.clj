@@ -209,26 +209,24 @@
                        ;; Check for cancellation
                        (if (= :cancelled (:state @status-atom))
                          (swap! status-atom assoc :state :cancelled :message "Operation cancelled")
-                         (let [issues-future (future (try
-                                                       (println "started " operation-id)
-                                                       (let [issues (yt-client/issues-to-analyse {:key yt-token} query)
-                                                             timestamp (System/currentTimeMillis)
-                                                             file-id (str "issues-analysis-" timestamp)
-                                                             filename (str file-id ".json")
-                                                             export-dir (io/file (System/getProperty "java.io.tmpdir") "todoist-sync-exports")]
-                                                         (when-not (.exists export-dir)
-                                                           (.mkdirs export-dir))
-                                                         (let [temp-file (io/file export-dir filename)]
-                                                           (spit temp-file (json/write-str issues)))
-                                                         (println "has result " operation-id)
-                                                         {
-                                                          :state       :completed
-                                                          :progress    100
-                                                          :message     (str "Analysis complete. " (count issues) " issues found.")
-                                                          :download-id file-id
-                                                          })
-                                                       (finally (println "finally " operation-id))
-                                                       ))
+                         (let [issues-future (future
+                                               (try
+                                                 (println "started " operation-id)
+                                                 (let [issues (yt-client/issues-to-analyse {:key yt-token} query)
+                                                       timestamp (System/currentTimeMillis)
+                                                       file-id (str "issues-analysis-" timestamp)
+                                                       filename (str file-id ".json")
+                                                       export-dir (io/file (System/getProperty "java.io.tmpdir") "todoist-sync-exports")]
+                                                   (when-not (.exists export-dir)
+                                                     (.mkdirs export-dir))
+                                                   (let [temp-file (io/file export-dir filename)]
+                                                     (spit temp-file (json/write-str issues)))
+                                                   (println "has result " operation-id)
+                                                   {:state      :completed
+                                                    :progress   100
+                                                    :message    (str "Analysis complete. " (count issues) " issues found.")
+                                                    :downloadId file-id})
+                                                 (finally (println "finally " operation-id))))
 
                                ;; Periodically update progress while waiting for the result
                                check-interval 500           ;; ms
@@ -244,9 +242,9 @@
 
                                (if (future-done? issues-future)
                                  ;; Future completed, process the result
-                                 (let [status @issues-future]
-                                   ;; Update status with completion info
-                                   (swap! status-atom status))
+                                 (let [result @issues-future]
+                                   ;; Just update the status atom with the result from the future
+                                   (swap! status-atom merge result))
 
                                  ;; Not done yet, update progress and check again
                                  (if (>= elapsed max-wait-time)
