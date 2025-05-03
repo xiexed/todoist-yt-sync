@@ -65,10 +65,28 @@
                (wrap-json-response)
                (wrap-json-body {:keywords? true})))
 
+(def export-dir 
+  (java.io.File. (System/getProperty "java.io.tmpdir") "todoist-sync-exports"))
+
+(defn cleanup-old-files
+  "Delete export files older than max-age-days days"
+  [max-age-days]
+  (let [now (System/currentTimeMillis)
+        max-age-ms (* max-age-days 24 60 60 1000)
+        cutoff-time (- now max-age-ms)]
+    (when (.exists export-dir)
+      (doseq [file (.listFiles export-dir)]
+        (when (and (.isFile file)
+                   (.endsWith (.getName file) ".json")
+                   (< (.lastModified file) cutoff-time))
+          (println "Deleting old export file:" (.getName file))
+          (.delete file))))))
+
 (defn download-file [file-id]
   (let [filename (str file-id ".json")
-        temp-dir (java.io.File. (System/getProperty "java.io.tmpdir") "todoist-sync-exports")
-        file (java.io.File. temp-dir filename)]
+        file (java.io.File. export-dir filename)]
+    ;; Try to clean up files older than 2 days whenever a download happens
+    (future (cleanup-old-files 2))
     (if (.exists file)
       (-> (rur/response (slurp file))
           (rur/content-type "application/json")
@@ -132,6 +150,21 @@
               (wrap-cookies)
               (wrap-params))))
 
+;; Schedule a task to clean up old files every 6 hours
+(defonce cleanup-scheduler
+  (future 
+    (try
+      (loop []
+        (cleanup-old-files 2) ;; Delete files older than 2 days
+        (Thread/sleep (* 6 60 60 1000)) ;; Sleep for 6 hours
+        (recur))
+      (catch Exception e
+        (println "Error in cleanup scheduler:" (.getMessage e))))))
+
 (defn -main
   [& args]
+  ;; Clean up on startup
+  (println "Cleaning up old export files...")
+  (cleanup-old-files 2)
+  
   (jetty/run-jetty app {:port 3000}))

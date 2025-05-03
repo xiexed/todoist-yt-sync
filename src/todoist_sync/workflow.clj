@@ -195,10 +195,9 @@
                        timestamp (System/currentTimeMillis)
                        file-id (str "issues-analysis-" timestamp)
                        filename (str file-id ".json")
-                       temp-dir (io/file (System/getProperty "java.io.tmpdir") "todoist-sync-exports")
-                       _ (when-not (.exists temp-dir)
-                           (.mkdirs temp-dir))
-                       temp-file (io/file temp-dir filename)
+                       _ (when-not (.exists todoist-sync.core/export-dir)
+                           (.mkdirs todoist-sync.core/export-dir))
+                       temp-file (io/file todoist-sync.core/export-dir filename)
                        _ (spit temp-file (json/write-str issues))]
                    {:download-id file-id
                     :message (str "Analysis complete. " (count issues) " issues found.")}))}])
