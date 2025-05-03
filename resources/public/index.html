@@ -53,6 +53,75 @@
                         <div v-if="output.data['text-out']">
                             <pre @click.native="$event.target.select()">{{ output.data['text-out'] }}</pre>
                         </div>
+                        <div v-if="output.data['operation-id']" class="q-pa-md text-center">
+                            <p>{{ output.data.message }}</p>
+                            <div v-if="output.operationStatus">
+                                <div v-if="output.operationStatus.state === 'running'" class="q-pa-md q-gutter-y-md">
+                                    <q-card bordered class="bg-grey-1">
+                                        <q-card-section>
+                                            <div class="text-h6">Analysis in Progress</div>
+                                            
+                                            <div class="row items-center q-my-md">
+                                                <div class="col-10">
+                                                    <q-linear-progress
+                                                        :value="output.operationStatus.progress / 100"
+                                                        color="primary"
+                                                        size="25px"
+                                                        track-color="grey-3"
+                                                    />
+                                                </div>
+                                                <div class="col-2 text-subtitle1 text-center">
+                                                    {{ output.operationStatus.progress }}%
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="q-mb-md text-subtitle1">{{ output.operationStatus.message }}</div>
+                                            
+                                            <q-btn
+                                                color="negative"
+                                                icon="cancel"
+                                                label="Cancel Operation"
+                                                size="md"
+                                                @click="cancelOperation(output.data['operation-id'])"
+                                            />
+                                        </q-card-section>
+                                    </q-card>
+                                </div>
+                                <div v-else-if="output.operationStatus.state === 'completed'" class="q-pa-md q-gutter-y-md">
+                                    <q-card bordered class="bg-green-1">
+                                        <q-card-section>
+                                            <div class="text-h6 text-positive">Analysis Complete</div>
+                                            <div class="q-mb-md text-subtitle1">{{ output.operationStatus.message }}</div>
+                                            <q-btn 
+                                                color="primary" 
+                                                icon="download" 
+                                                label="Download Analysis" 
+                                                type="a" 
+                                                :href="'/download/' + output.operationStatus.download_id" 
+                                                target="_blank"
+                                                size="md"
+                                            />
+                                        </q-card-section>
+                                    </q-card>
+                                </div>
+                                <div v-else-if="output.operationStatus.state === 'cancelled'" class="q-pa-md q-gutter-y-md">
+                                    <q-card bordered class="bg-orange-1">
+                                        <q-card-section>
+                                            <div class="text-h6 text-orange">Operation Cancelled</div>
+                                            <div class="text-subtitle1">{{ output.operationStatus.message }}</div>
+                                        </q-card-section>
+                                    </q-card>
+                                </div>
+                                <div v-else-if="output.operationStatus.state === 'error'" class="q-pa-md q-gutter-y-md">
+                                    <q-card bordered class="bg-red-1">
+                                        <q-card-section>
+                                            <div class="text-h6 text-negative">Error</div>
+                                            <div class="text-subtitle1">{{ output.operationStatus.message }}</div>
+                                        </q-card-section>
+                                    </q-card>
+                                </div>
+                            </div>
+                        </div>
                         <div v-if="output.data['download-id']" class="q-pa-md text-center">
                             <p v-if="output.data.message">{{ output.data.message }}</p>
                             <q-btn 
@@ -62,7 +131,7 @@
                                 type="a" 
                                 :href="'/download/' + output.data['download-id']" 
                                 target="_blank"
-                            ></q-btn>
+                            />
                         </div>
                         <div v-if="output.data['issues-added']">Issues tag was added to
                             <li v-for="issue in output.data['issues-added']" :key="issue">
@@ -272,7 +341,8 @@
                 text: '',
                 tasks: [],
                 taskSelected: null,
-                outputs: []
+                outputs: [],
+                pollingIntervals: {} // To track status polling intervals
             }
         },
         async created() {
@@ -286,14 +356,67 @@
         },
         methods: {
             outputClose(output) {
-                this.$delete(this.outputs, this.outputs.indexOf(output))
+                // Clear any polling interval associated with this output
+                if (output.data && output.data['operation-id'] && this.pollingIntervals[output.data['operation-id']]) {
+                    clearInterval(this.pollingIntervals[output.data['operation-id']]);
+                    delete this.pollingIntervals[output.data['operation-id']];
+                }
+                this.$delete(this.outputs, this.outputs.indexOf(output));
             },
+            
+            // Start polling for operation status
+            startPollingStatus(operationId, output) {
+                // Clear any existing interval for this operation
+                if (this.pollingIntervals[operationId]) {
+                    clearInterval(this.pollingIntervals[operationId]);
+                }
+                
+                // Set up polling
+                const pollInterval = setInterval(async () => {
+                    try {
+                        const response = await fetch(`/json/operation-status/${operationId}`);
+                        const status = await response.json();
+                        
+                        // Update the status in the output
+                        this.$set(output, 'operationStatus', status);
+                        
+                        // If the operation is no longer running, stop polling
+                        if (['completed', 'cancelled', 'error'].includes(status.state)) {
+                            clearInterval(this.pollingIntervals[operationId]);
+                            delete this.pollingIntervals[operationId];
+                        }
+                    } catch (err) {
+                        console.error('Error polling operation status:', err);
+                    }
+                }, 1000); // Poll every second
+                
+                // Store the interval ID
+                this.pollingIntervals[operationId] = pollInterval;
+            },
+            
+            // Cancel an operation
+            async cancelOperation(operationId) {
+                try {
+                    const response = await fetch(`/json/cancel-operation/${operationId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const result = await response.json();
+                    console.log('Cancel operation result:', result);
+                } catch (err) {
+                    console.error('Error cancelling operation:', err);
+                }
+            },
+            
             onSubmit() {
-
                 let task = {text: this.taskSelected.label};
                 this.tasks.unshift(task)
 
-                this.$q.cookies.set('taskSelected', this.taskSelected.value)
+                this.$q.cookies.set('taskSelected', this.taskSelected.value);
+                
                 // Regular JSON API call for all handlers
                 fetch("/json/do-task", {
                     method: 'POST',
@@ -309,10 +432,18 @@
                 }).then(async (res) => {
                     let d = await res.json();
                     console.log("post d = ", d);
-                    this.$delete(this.tasks, this.tasks.indexOf(task))
+                    this.$delete(this.tasks, this.tasks.indexOf(task));
+                    
                     let items = {title: this.taskSelected.label, data: d};
-                    console.log("post items = ", JSON.stringify(items) );
-                    this.outputs.unshift(items)
+                    console.log("post items = ", JSON.stringify(items));
+                    
+                    // Add the output
+                    this.outputs.unshift(items);
+                    
+                    // If this is a long-running operation, start polling for status
+                    if (d['operation-id']) {
+                        this.startPollingStatus(d['operation-id'], items);
+                    }
                 }).catch(async (e) => {
                     console.log("err  = ", e);
                     this.$delete(this.tasks, this.tasks.indexOf(task))

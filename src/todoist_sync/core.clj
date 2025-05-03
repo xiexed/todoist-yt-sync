@@ -61,7 +61,11 @@
                      (if-let [h (workflow/handler-by-id task-id)]
                        (let [value (h (tokens request) body-data)]
                          (rur/response value))
-                       (rur/bad-request (str "No task " task-id))))))
+                       (rur/bad-request (str "No task " task-id)))))
+                 (GET "/operation-status/:id" [id]
+                   (rur/response (workflow/get-operation-status id)))
+                 (POST "/cancel-operation/:id" [id]
+                   (rur/response (workflow/cancel-operation id))))
                (wrap-json-response)
                (wrap-json-body {:keywords? true})))
 
