@@ -14,6 +14,7 @@
             [ring.middleware.json :refer [wrap-json-response wrap-json-body]]
             [ring.middleware.session.memory :as ses-mem]
             [promesa.core :as p]
+            [clojure.data.json :as dj]
             [clojure.string :as str])
   (:import (com.typesafe.config ConfigFactory)
            (org.joda.time DateTime)
@@ -53,17 +54,52 @@
                                    (merge (->> tokens (map (fn [[k v]] [k (some? v)])) (into {}))
                                           {:task-options (workflow/handlers-available tokens)}))))
                  (POST "/do-task" request
-                   (reset! last-sent-text (:text (request :body)))
-                   (let [task-id (get-in request [:body :task :value])]
+                   (let [body-data (:body request)
+                         _ (when-let [txt (:text body-data)]
+                             (reset! last-sent-text txt))
+                         task-id (get-in body-data [:task :value])]
                      (if-let [h (workflow/handler-by-id task-id)]
-                       (let [value (h (tokens request) (:body request))]
+                       (let [value (h (tokens request) body-data)]
                          (rur/response value))
-                       (rur/bad-request (str "No task " task-id))))))
+                       (rur/bad-request (str "No task " task-id)))))
+                 (GET "/operation-status/:id" [id]
+                   (rur/response (workflow/get-operation-status id)))
+                 (POST "/cancel-operation/:id" [id]
+                   (rur/response (workflow/cancel-operation id))))
                (wrap-json-response)
                (wrap-json-body {:keywords? true})))
 
+(def export-dir 
+  (java.io.File. (System/getProperty "java.io.tmpdir") "todoist-sync-exports"))
+
+(defn cleanup-old-files
+  "Delete export files older than max-age-days days"
+  [max-age-days]
+  (let [now (System/currentTimeMillis)
+        max-age-ms (* max-age-days 24 60 60 1000)
+        cutoff-time (- now max-age-ms)]
+    (when (.exists export-dir)
+      (doseq [file (.listFiles export-dir)]
+        (when (and (.isFile file)
+                   (.endsWith (.getName file) ".json")
+                   (< (.lastModified file) cutoff-time))
+          (println "Deleting old export file:" (.getName file))
+          (.delete file))))))
+
+(defn download-file [file-id]
+  (let [filename (str file-id ".json")
+        file (java.io.File. export-dir filename)]
+    ;; Try to clean up files older than 2 days whenever a download happens
+    (future (cleanup-old-files 2))
+    (if (.exists file)
+      (-> (rur/response (slurp file))
+          (rur/content-type "application/json")
+          (rur/header "Content-Disposition" (str "attachment; filename=\"" filename "\"")))
+      (rur/not-found (str "File " file-id " not found")))))
+
 (defroutes app-routes
            (GET "/" [] (some-> (rur/resource-response "/index.html" {:root "public"}) (rur/content-type "text/html")))
+           (GET "/download/:file-id" [file-id] (download-file file-id))
            (route/resources "/")
            json-api
            (POST "/post-task" [text :as request]
@@ -118,6 +154,21 @@
               (wrap-cookies)
               (wrap-params))))
 
+;; Schedule a task to clean up old files every 6 hours
+(defonce cleanup-scheduler
+  (future 
+    (try
+      (loop []
+        (cleanup-old-files 2) ;; Delete files older than 2 days
+        (Thread/sleep (* 6 60 60 1000)) ;; Sleep for 6 hours
+        (recur))
+      (catch Exception e
+        (println "Error in cleanup scheduler:" (.getMessage e))))))
+
 (defn -main
   [& args]
+  ;; Clean up on startup
+  (println "Cleaning up old export files...")
+  (cleanup-old-files 2)
+  
   (jetty/run-jetty app {:port 3000}))

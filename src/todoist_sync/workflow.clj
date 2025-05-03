@@ -2,12 +2,15 @@
   (:require [clojure.data.json :as json]
             [clojure.set :as set]
             [clojure.string :as str]
+            [clojure.java.io :as io]
             [todoist-sync.processed-db :as db]
             [todoist-sync.texts-handler :as thd]
             [todoist-sync.todoist :as td]
             [todoist-sync.workdash :as wd]
             [todoist-sync.yt-client :as yt-client])
-  (:import (java.net URL)))
+  (:import (org.jsoup Jsoup))
+  (:import (java.net URL)
+           (org.jsoup Jsoup)))
 
 (defn to-id-and-summary [resp]
   {:issue   (or (:idReadable resp) (str (get-in resp [:project :shortName]) "-" (:numberInProject resp)))
@@ -52,17 +55,86 @@
 
 (def ^:private issue-to-uid-cache (atom {}))
 
+;; Track running operations with their status
+(def running-operations (atom {}))
+
+(defn run-cancellable-task [operation-id task]
+  (let [status-atom (atom {:state      :running
+                           :progress   0
+                           :message    "Starting analysis..."
+                           :start-time (System/currentTimeMillis)})
+        _ (swap! running-operations assoc operation-id status-atom)]
+    (future
+      (try
+        ;; Check for cancellation
+        (if (= :cancelled (:state @status-atom))
+          (swap! status-atom assoc :state :cancelled :message "Operation cancelled")
+          (let [issues-future (future
+                                (try
+                                  (println "started " operation-id)
+                                  (let [issues (task status-atom)]
+                                    (merge {:state    :completed
+                                            :progress 100
+                                            :message  "Analysis complete."} issues))
+                                  (catch Exception e {:state    :error
+                                                      :progress 100
+                                                      :message  (str "caught exception: " (.getMessage e))})
+                                  (finally (println "finally " operation-id))))
+
+                ;; Periodically update progress while waiting for the result
+                check-interval 500                          ;; ms
+                max-wait-time (* 5 60 1000)                 ;; 5 minutes timeout
+                start-time (System/currentTimeMillis)]
+
+            (loop [elapsed 0]
+              (if (= :cancelled (:state @status-atom))
+                ;; Cancel the operation if requested
+                (do
+                  (future-cancel issues-future)
+                  (swap! status-atom assoc :state :cancelled :message "Operation cancelled"))
+
+                (if (future-done? issues-future)
+                  ;; Future completed, process the result
+                  (let [result @issues-future]
+                    ;; Just update the status atom with the result from the future
+                    (swap! status-atom merge result))
+
+                  ;; Not done yet, update progress and check again
+                  (if (>= elapsed max-wait-time)
+                    ;; Timeout
+                    (do
+                      (future-cancel issues-future)
+                      (swap! status-atom assoc :state :error :message "Operation timed out"))
+                    (do
+                      ;; Update progress as a percentage of max wait time
+                      (swap! status-atom assoc
+                             :progress (min 95 (int (* 100 (/ elapsed max-wait-time)))))
+                      (Thread/sleep check-interval)
+                      (recur (+ elapsed check-interval)))))))))
+
+        (catch Exception e
+          (swap! status-atom assoc :state :error :message (str "Error: " (.getMessage e)))
+          (println "Error in export operation:" e))
+
+        ;; Clean up the operation after 10 minutes
+        (finally
+          (future
+            (Thread/sleep (* 10 60 1000))
+            (swap! running-operations dissoc operation-id)))))
+    {:operation-id operation-id
+     :message      "Analysis started. Please wait for results."}))
+
 (defn get-issue-uid [issue yt-token]
   (cond
     (string? issue) (or (get @issue-to-uid-cache issue)
-                            (let [uid (try
-                                        (:id (yt-client/issue {:key yt-token} (str issue) {:fields "id"}))
-                                        (catch clojure.lang.ExceptionInfo e
-                                          (if (= 404 (:status (.getData e)))
-                                            issue
-                                            (throw e))))]
-                              (swap! issue-to-uid-cache assoc issue uid)
-                              uid))
+                        (let [uid (try
+                                    (:id (yt-client/issue {:key yt-token} (str issue) {:fields "id"}))
+                                    (catch clojure.lang.ExceptionInfo e
+                                      (if (= 404 (:status (.getData e)))
+                                        issue
+                                        (throw e))))]
+                          (swap! issue-to-uid-cache assoc issue uid)
+                          uid))
     (associative? issue) (get-issue-uid (:issue issue) yt-token)))
 
 (defn update-scheduled-tag [{yt-token :youtrack} body]
@@ -180,7 +252,37 @@
    {:name      "Update Priority lists"
     :available #(:youtrack %)
     :handler   (fn [{yt-token :youtrack} body]
-                 (wd/update-prioirity-lists-on-server yt-token))}])
+                 (wd/update-prioirity-lists-on-server yt-token))}
+   {:name      "Export Issues"
+    :available #(:youtrack %)
+    :handler   (fn [{yt-token :youtrack} {:keys [settings text]}]
+                 (let [query (if (not-empty text)
+                               (.text (Jsoup/parseBodyFragment text))
+                               (or (:query settings) yt-client/default-query))
+                       _ (println "query:" query)
+                       operation-id (str (java.util.UUID/randomUUID))]
+                   (run-cancellable-task operation-id
+                                         (fn [status-atom]
+                                           (let [processed (atom 0)
+                                                 issues (->> (yt-client/issues-to-analyse {:key yt-token} query)
+                                                             (map (fn [e]
+                                                                    (swap! status-atom assoc :message  (str "Analysing: " (swap! processed inc) " issues"))
+                                                                    e)))
+                                                 timestamp (System/currentTimeMillis)
+                                                 file-id (str "issues-analysis-" timestamp)
+                                                 filename (str file-id ".json")
+                                                 export-dir (io/file (System/getProperty "java.io.tmpdir") "todoist-sync-exports")]
+                                             (when-not (.exists export-dir)
+                                               (.mkdirs export-dir))
+                                             (let [temp-file (io/file export-dir filename)]
+                                               (spit temp-file (json/write-str issues))) {
+                                              :message (str "Analysis complete. " (count issues) " issues found.")
+                                              :downloadId file-id
+                                              })
+                                           ))
+                   ))}])
+
+
 
 (defn handler-id [{:keys [name]}] (str/replace name #"\s+" ""))
 
@@ -191,3 +293,15 @@
                      :label (:name h)}))))
 
 (defn handler-by-id [id] (:handler (first (filter (fn [h] (= (handler-id h) id)) handlers))))
+
+(defn get-operation-status [operation-id]
+  (if-let [status-atom (get @running-operations operation-id)]
+    @status-atom
+    {:state :not-found :message "Operation not found"}))
+
+(defn cancel-operation [operation-id]
+  (if-let [status-atom (get @running-operations operation-id)]
+    (do
+      (swap! status-atom assoc :state :cancelled :message "Operation cancelled")
+      {:success true :message "Operation cancelled"})
+    {:success false :message "Operation not found"}))

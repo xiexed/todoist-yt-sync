@@ -48,7 +48,8 @@
             chunk (get-from-yt conf "issues" {:fields (or fields *default-issue-fields*) :$skip skip :$top chunk-size :query query} req-params)]
         (if (< (count chunk) chunk-size)
           chunk
-          (concat chunk (lazy-seq (cons-load (+ skip chunk-size)))))))
+          (->> (concat chunk (lazy-seq (cons-load (+ skip chunk-size))))
+               (filter (fn [arg] (not (.isInterrupted (Thread/currentThread)))))))))
     0)))
 
 (defn issue
@@ -131,6 +132,7 @@
 
 (defn issues-to-analyse [conf query]
   (->> (issues conf query {:fields "idReadable,summary,description,reporter(email),value(name),tags(name),votes,resolved,updated,customFields(id,name,value(name, value, id)),links(direction,linkType(name),issues(idReadable,numberInProject,project(shortName))),comments(text,created,author(name))"})
+       (take 3000)
        (map (fn [issue]
               (assoc issue :activities (map clean-up-activity (activities conf (:idReadable issue))))))
        (map clean-up)))
