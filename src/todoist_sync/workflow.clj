@@ -72,11 +72,13 @@
           (let [issues-future (future
                                 (try
                                   (println "started " operation-id)
-                                  (let [issues (task)]
+                                  (let [issues (task status-atom)]
                                     (merge {:state    :completed
                                             :progress 100
-                                            :message  (str "Analysis complete. " (count issues) " issues found.")} issues
-                                           ))
+                                            :message  "Analysis complete."} issues))
+                                  (catch Exception e {:state    :error
+                                                      :progress 100
+                                                      :message  (str "caught exception: " (.getMessage e))})
                                   (finally (println "finally " operation-id))))
 
                 ;; Periodically update progress while waiting for the result
@@ -106,8 +108,7 @@
                     (do
                       ;; Update progress as a percentage of max wait time
                       (swap! status-atom assoc
-                             :progress (min 95 (int (* 100 (/ elapsed max-wait-time))))
-                             :message "Processing...")
+                             :progress (min 95 (int (* 100 (/ elapsed max-wait-time)))))
                       (Thread/sleep check-interval)
                       (recur (+ elapsed check-interval)))))))))
 
@@ -261,8 +262,12 @@
                        _ (println "query:" query)
                        operation-id (str (java.util.UUID/randomUUID))]
                    (run-cancellable-task operation-id
-                                         (fn []
-                                           (let [issues (yt-client/issues-to-analyse {:key yt-token} query)
+                                         (fn [status-atom]
+                                           (let [processed (atom 0)
+                                                 issues (->> (yt-client/issues-to-analyse {:key yt-token} query)
+                                                             (map (fn [e]
+                                                                    (swap! status-atom assoc :message  (str "Analysing: " (swap! processed inc) " issues"))
+                                                                    e)))
                                                  timestamp (System/currentTimeMillis)
                                                  file-id (str "issues-analysis-" timestamp)
                                                  filename (str file-id ".json")
@@ -270,8 +275,10 @@
                                              (when-not (.exists export-dir)
                                                (.mkdirs export-dir))
                                              (let [temp-file (io/file export-dir filename)]
-                                               (spit temp-file (json/write-str issues)))
-                                             {:downloadId file-id})
+                                               (spit temp-file (json/write-str issues))) {
+                                              :message (str "Analysis complete. " (count issues) " issues found.")
+                                              :downloadId file-id
+                                              })
                                            ))
                    ))}])
 
