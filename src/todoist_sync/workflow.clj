@@ -58,6 +58,71 @@
 ;; Track running operations with their status
 (def running-operations (atom {}))
 
+(defn run-cancellable-task [operation-id task]
+  (let [status-atom (atom {:state      :running
+                           :progress   0
+                           :message    "Starting analysis..."
+                           :start-time (System/currentTimeMillis)})
+        _ (swap! running-operations assoc operation-id status-atom)]
+    (future
+      (try
+        ;; Check for cancellation
+        (if (= :cancelled (:state @status-atom))
+          (swap! status-atom assoc :state :cancelled :message "Operation cancelled")
+          (let [issues-future (future
+                                (try
+                                  (println "started " operation-id)
+                                  (let [issues (task)]
+                                    (merge {:state    :completed
+                                            :progress 100
+                                            :message  (str "Analysis complete. " (count issues) " issues found.")} issues
+                                           ))
+                                  (finally (println "finally " operation-id))))
+
+                ;; Periodically update progress while waiting for the result
+                check-interval 500                          ;; ms
+                max-wait-time (* 5 60 1000)                 ;; 5 minutes timeout
+                start-time (System/currentTimeMillis)]
+
+            (loop [elapsed 0]
+              (if (= :cancelled (:state @status-atom))
+                ;; Cancel the operation if requested
+                (do
+                  (future-cancel issues-future)
+                  (swap! status-atom assoc :state :cancelled :message "Operation cancelled"))
+
+                (if (future-done? issues-future)
+                  ;; Future completed, process the result
+                  (let [result @issues-future]
+                    ;; Just update the status atom with the result from the future
+                    (swap! status-atom merge result))
+
+                  ;; Not done yet, update progress and check again
+                  (if (>= elapsed max-wait-time)
+                    ;; Timeout
+                    (do
+                      (future-cancel issues-future)
+                      (swap! status-atom assoc :state :error :message "Operation timed out"))
+                    (do
+                      ;; Update progress as a percentage of max wait time
+                      (swap! status-atom assoc
+                             :progress (min 95 (int (* 100 (/ elapsed max-wait-time))))
+                             :message "Processing...")
+                      (Thread/sleep check-interval)
+                      (recur (+ elapsed check-interval)))))))))
+
+        (catch Exception e
+          (swap! status-atom assoc :state :error :message (str "Error: " (.getMessage e)))
+          (println "Error in export operation:" e))
+
+        ;; Clean up the operation after 10 minutes
+        (finally
+          (future
+            (Thread/sleep (* 10 60 1000))
+            (swap! running-operations dissoc operation-id)))))
+    {:operation-id operation-id
+     :message      "Analysis started. Please wait for results."}))
+
 (defn get-issue-uid [issue yt-token]
   (cond
     (string? issue) (or (get @issue-to-uid-cache issue)
@@ -194,85 +259,23 @@
                                (.text (Jsoup/parseBodyFragment text))
                                (or (:query settings) yt-client/default-query))
                        _ (println "query:" query)
-                       operation-id (str (java.util.UUID/randomUUID))
-                       status-atom (atom {:state      :running
-                                          :progress   0
-                                          :message    "Starting analysis..."
-                                          :start-time (System/currentTimeMillis)})
+                       operation-id (str (java.util.UUID/randomUUID))]
+                   (run-cancellable-task operation-id
+                                         (fn []
+                                           (let [issues (yt-client/issues-to-analyse {:key yt-token} query)
+                                                 timestamp (System/currentTimeMillis)
+                                                 file-id (str "issues-analysis-" timestamp)
+                                                 filename (str file-id ".json")
+                                                 export-dir (io/file (System/getProperty "java.io.tmpdir") "todoist-sync-exports")]
+                                             (when-not (.exists export-dir)
+                                               (.mkdirs export-dir))
+                                             (let [temp-file (io/file export-dir filename)]
+                                               (spit temp-file (json/write-str issues)))
+                                             {:downloadId file-id})
+                                           ))
+                   ))}])
 
-                       ;; Register the operation
-                       _ (swap! running-operations assoc operation-id status-atom)]
 
-                   ;; Start the operation in a separate thread
-                   (future
-                     (try
-                       ;; Check for cancellation
-                       (if (= :cancelled (:state @status-atom))
-                         (swap! status-atom assoc :state :cancelled :message "Operation cancelled")
-                         (let [issues-future (future
-                                               (try
-                                                 (println "started " operation-id)
-                                                 (let [issues (yt-client/issues-to-analyse {:key yt-token} query)
-                                                       timestamp (System/currentTimeMillis)
-                                                       file-id (str "issues-analysis-" timestamp)
-                                                       filename (str file-id ".json")
-                                                       export-dir (io/file (System/getProperty "java.io.tmpdir") "todoist-sync-exports")]
-                                                   (when-not (.exists export-dir)
-                                                     (.mkdirs export-dir))
-                                                   (let [temp-file (io/file export-dir filename)]
-                                                     (spit temp-file (json/write-str issues)))
-                                                   (println "has result " operation-id)
-                                                   {:state      :completed
-                                                    :progress   100
-                                                    :message    (str "Analysis complete. " (count issues) " issues found.")
-                                                    :downloadId file-id})
-                                                 (finally (println "finally " operation-id))))
-
-                               ;; Periodically update progress while waiting for the result
-                               check-interval 500           ;; ms
-                               max-wait-time (* 5 60 1000)  ;; 5 minutes timeout
-                               start-time (System/currentTimeMillis)]
-
-                           (loop [elapsed 0]
-                             (if (= :cancelled (:state @status-atom))
-                               ;; Cancel the operation if requested
-                               (do
-                                 (future-cancel issues-future)
-                                 (swap! status-atom assoc :state :cancelled :message "Operation cancelled"))
-
-                               (if (future-done? issues-future)
-                                 ;; Future completed, process the result
-                                 (let [result @issues-future]
-                                   ;; Just update the status atom with the result from the future
-                                   (swap! status-atom merge result))
-
-                                 ;; Not done yet, update progress and check again
-                                 (if (>= elapsed max-wait-time)
-                                   ;; Timeout
-                                   (do
-                                     (future-cancel issues-future)
-                                     (swap! status-atom assoc :state :error :message "Operation timed out"))
-                                   (do
-                                     ;; Update progress as a percentage of max wait time
-                                     (swap! status-atom assoc
-                                            :progress (min 95 (int (* 100 (/ elapsed max-wait-time))))
-                                            :message "Processing...")
-                                     (Thread/sleep check-interval)
-                                     (recur (+ elapsed check-interval)))))))))
-
-                       (catch Exception e
-                         (swap! status-atom assoc :state :error :message (str "Error: " (.getMessage e)))
-                         (println "Error in export operation:" e))
-
-                       ;; Clean up the operation after 10 minutes
-                       (finally
-                         (future
-                           (Thread/sleep (* 10 60 1000))
-                           (swap! running-operations dissoc operation-id)))))
-
-                   ;; Return the operation ID immediately
-                   {:operation-id operation-id
-                    :message      "Analysis started. Please wait for results."}))}])
 
 (defn handler-id [{:keys [name]}] (str/replace name #"\s+" ""))
 
