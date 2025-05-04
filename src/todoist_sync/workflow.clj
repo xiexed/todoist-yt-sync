@@ -7,7 +7,8 @@
             [todoist-sync.texts-handler :as thd]
             [todoist-sync.todoist :as td]
             [todoist-sync.workdash :as wd]
-            [todoist-sync.yt-client :as yt-client])
+            [todoist-sync.yt-client :as yt-client]
+            [todoist-sync.preparator :as prep])
   (:import (org.jsoup Jsoup))
   (:import (java.net URL)
            (org.jsoup Jsoup)))
@@ -280,6 +281,36 @@
                                               :downloadId file-id
                                               })
                                            ))
+                   ))}
+   {:name      "Enhance Referenced Issues"
+    :available #(:youtrack %)
+    :handler   (fn [{yt-token :youtrack} {:keys [settings text]}]
+                 (let [json-data (if (not-empty text)
+                                   (try
+                                     (json/read-str (.text (Jsoup/parseBodyFragment text)) :key-fn keyword)
+                                     (catch Exception e
+                                       (println "Error parsing JSON:" (.getMessage e))
+                                       {:error "Invalid JSON input"}))
+                                   {:error "No data provided"})
+                       _ (println "Processing commits with referenced issues")
+                       operation-id (str (java.util.UUID/randomUUID))]
+                   (if (:error json-data)
+                     {:error (:error json-data)}
+                     (run-cancellable-task operation-id
+                                          (fn [status-atom]
+                                            (swap! status-atom assoc :message "Enhancing referenced issues...")
+                                            (let [commits json-data
+                                                  enhanced-commits (prep/enhance-referenced-issues {:key yt-token} commits)
+                                                  timestamp (System/currentTimeMillis)
+                                                  file-id (str "enhanced-commits-" timestamp)
+                                                  filename (str file-id ".json")
+                                                  export-dir (io/file (System/getProperty "java.io.tmpdir") "todoist-sync-exports")]
+                                              (when-not (.exists export-dir)
+                                                (.mkdirs export-dir))
+                                              (let [temp-file (io/file export-dir filename)]
+                                                (spit temp-file (json/write-str enhanced-commits)))
+                                              {:message    (str "Enhancement complete. " (count enhanced-commits) " commits processed.")
+                                               :downloadId file-id}))))
                    ))}])
 
 
