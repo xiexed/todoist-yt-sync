@@ -59,6 +59,17 @@
 ;; Track running operations with their status
 (def running-operations (atom {}))
 
+(defn save-to-export-file [data file-id-prefix]
+  (let [timestamp (System/currentTimeMillis)
+        file-id (str file-id-prefix "-" timestamp)
+        filename (str file-id ".json")
+        export-dir (io/file (System/getProperty "java.io.tmpdir") "todoist-sync-exports")]
+    (when-not (.exists export-dir)
+      (.mkdirs export-dir))
+    (let [temp-file (io/file export-dir filename)]
+      (spit temp-file (json/write-str data)))
+    {:downloadId file-id}))
+    
 (defn run-cancellable-task [operation-id task]
   (let [status-atom (atom {:state      :running
                            :progress   0
@@ -267,19 +278,10 @@
                                            (let [processed (atom 0)
                                                  issues (->> (yt-client/issues-to-analyse {:key yt-token} query)
                                                              (map (fn [e]
-                                                                    (swap! status-atom assoc :message  (str "Analysing: " (swap! processed inc) " issues"))
-                                                                    e)))
-                                                 timestamp (System/currentTimeMillis)
-                                                 file-id (str "issues-analysis-" timestamp)
-                                                 filename (str file-id ".json")
-                                                 export-dir (io/file (System/getProperty "java.io.tmpdir") "todoist-sync-exports")]
-                                             (when-not (.exists export-dir)
-                                               (.mkdirs export-dir))
-                                             (let [temp-file (io/file export-dir filename)]
-                                               (spit temp-file (json/write-str issues))) {
-                                              :message (str "Analysis complete. " (count issues) " issues found.")
-                                              :downloadId file-id
-                                              })
+                                                                    (swap! status-atom assoc :message (str "Analysing: " (swap! processed inc) " issues"))
+                                                                    e)))]
+                                             (merge (save-to-export-file issues "issues-analysis")
+                                                    {:message (str "Analysis complete. " (count issues) " issues found.")}))
                                            ))
                    ))}
    {:name      "Enhance Referenced Issues"
@@ -297,20 +299,12 @@
                    (if (:error json-data)
                      {:error (:error json-data)}
                      (run-cancellable-task operation-id
-                                          (fn [status-atom]
-                                            (swap! status-atom assoc :message "Enhancing referenced issues...")
-                                            (let [commits json-data
-                                                  enhanced-commits (prep/enhance-referenced-issues {:key yt-token} commits)
-                                                  timestamp (System/currentTimeMillis)
-                                                  file-id (str "enhanced-commits-" timestamp)
-                                                  filename (str file-id ".json")
-                                                  export-dir (io/file (System/getProperty "java.io.tmpdir") "todoist-sync-exports")]
-                                              (when-not (.exists export-dir)
-                                                (.mkdirs export-dir))
-                                              (let [temp-file (io/file export-dir filename)]
-                                                (spit temp-file (json/write-str enhanced-commits)))
-                                              {:message    (str "Enhancement complete. " (count enhanced-commits) " commits processed.")
-                                               :downloadId file-id}))))
+                                           (fn [status-atom]
+                                             (swap! status-atom assoc :message "Enhancing referenced issues...")
+                                             (let [commits json-data
+                                                   enhanced-commits (prep/enhance-referenced-issues {:key yt-token} commits)]
+                                               (merge (save-to-export-file enhanced-commits "enhanced-commits")
+                                                      {:message (str "Enhancement complete. " (count enhanced-commits) " commits processed.")})))))
                    ))}])
 
 
