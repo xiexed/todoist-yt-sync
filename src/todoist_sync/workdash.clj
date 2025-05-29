@@ -84,9 +84,9 @@
     (not-empty
       (str
         (when-let [type (:type issue)]
-          (str "\\[" (if (= "Meta Issue" type) "Meta" (get-first-letters type)) "\\]"))
+          (str "[" (if (= "Meta Issue" type) "Meta" (get-first-letters type)) "]"))
         (when (some #{:assignee} keys)
-          (str "\\[" (assignee) "\\]"))
+          (str "[" (assignee) "]"))
         (when-let [bold (not-empty
                           (str
                             (when (some #{:assignee-b} keys)
