@@ -49,7 +49,7 @@
   ;(map (fn [issue] (filter (fn [e] (#{"Assignee" "Planned for"} (:name e))) (yt-client/get-from-yt {:key yt-token} (str "issues/" issue "/customFields") {:fields "id,name,value(name, value, id)"}))))
   (let [issue-data (->> (yt-client/get-from-yt {:key yt-token}
                                                (str "issues/" issue)
-                                               {:fields "id,idReadable,summary,resolved,customFields(id,name,value(name, value, id))"})
+                                               {:fields "id,idReadable,summary,resolved,customFields(id,name,value(name, value, id)),tags(name)"})
                         (u/enhance-error (str "issue:" issue)))]
     {:idReadable  (:idReadable issue-data)
      :summary     (:summary issue-data)
@@ -58,6 +58,8 @@
      :assignee    (:name (custom-field issue-data "Assignee"))
      :state       (:name (custom-field issue-data "State"))
      :type        (:name (custom-field issue-data "Type"))
+     :tags        (map :name (:tags issue-data))
+     :included-in (map :name (custom-field issue-data "Included in builds"))
      :planned-for (map :name (custom-field issue-data "Planned for"))}))
 
 (defmacro record-issue-data-loads [filename & body]
