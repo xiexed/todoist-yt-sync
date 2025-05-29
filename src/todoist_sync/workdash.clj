@@ -44,6 +44,25 @@
        (filter (fn [[_ items]] (> (count items) 1)))
        (mapcat second)))
 
+(defn normalize-version [version]
+  "Converts build version (e.g. '252.18515') to planned version format (e.g. '2025.2')"
+  (when version
+    (let [parts (str/split version #"\.")
+          major (first parts)]
+      (when (and major (>= (count major) 3))
+        (let [year-part (subs major 0 2)
+              version-part (subs major 2)]
+          (str "20" year-part "." version-part))))))
+
+(defn backport-necessary? [issue-data]
+  "Detects if backport is necessary based on backport tags or planned-for/included-in mismatch"
+  (let [{:keys [tags planned-for included-in]} issue-data
+        has-backport-tag? (some #(str/starts-with? % "backport-to-") tags)
+        planned-for-set (set planned-for)
+        normalized-included-in (set (keep normalize-version included-in))
+        versions-mismatch? (not= planned-for-set normalized-included-in)]
+    (or has-backport-tag? versions-mismatch?)))
+
 ; (map #(wd/load-issue-data my-yt-token %) (mapcat :issues (wd/parse-md-to-sections text)))
 (defn load-issue-data [yt-token issue]
   ;(map (fn [issue] (filter (fn [e] (#{"Assignee" "Planned for"} (:name e))) (yt-client/get-from-yt {:key yt-token} (str "issues/" issue "/customFields") {:fields "id,name,value(name, value, id)"}))))
@@ -105,7 +124,7 @@
 
 (defn wd-line-render [issue keys]
   (let [{:keys [body suffix]} (render issue keys)]
-    (if (:resolved issue)
+    (if (= "Verified" (:state issue))
       {:suffix suffix}
       {:suffix suffix
        :body   body})))
@@ -113,6 +132,17 @@
 (defn wd-conditional-assignee-renderer [main-assignee]
   (fn [iss] (wd-line-render iss [(when (not= main-assignee (:assignee iss)) :assignee-b)
                                  (when (not= "Open" (:state iss)) :state)])))
+
+(defn enhance-issue-state [issue-data]
+  (assoc issue-data :state
+                    (let [recorded-state (:state issue-data)
+                                 verified (:name (custom-field issue-data "Verified"))]
+                             (if (= recorded-state "Fixed")
+                               (cond
+                                 (backport-necessary? issue-data) "Backporting"
+                                 verified "Verified"
+                                 :else "Not-verified")
+                               recorded-state))))
 
 (defn patch-outdated [yt-token src renderer]
   (let [lines (str/split-lines src)
@@ -122,7 +152,7 @@
         processed-lines (map (fn [line]
                                (let [parsed (parse-md-line line)]
                                  (if (= :issue (:type parsed))
-                                   (let [issue (load-issue-data yt-token (:value parsed))
+                                   (let [issue (enhance-issue-state (load-issue-data yt-token (:value parsed)))
                                          spaces (re-find line-space-pattern line)
                                          {:keys [body suffix]} (render-fn (merge issue
                                                                                  {:line (str/replace-first line spaces "")}))
