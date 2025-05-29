@@ -1,203 +1,219 @@
-{:diffs  ({:new    "IJPL-176233 Kubernetes. The resource group is collapsed on selection when WATCH is not permitted **\\[Open\\]**"
-           :old    "IJPL-176233 Kubernetes. The resource group is collapsed on selection when WATCH is not permitted"
-           :suffix " **\\[Open\\]**"}
-          {:new    "IJPL-175028 Kubernetes: improve watch api usage statistics **\\[In progress\\]**"
-           :old    "IJPL-175028 Kubernetes: improve watch api usage statistics"
-           :suffix " **\\[In progress\\]**"}
-          {:new    "IJPL-175482 Kubernetes: A/B Test for a separate Kubernetes toolwindow **\\[2025.1\\]\\[Fixed\\]**"
-           :old    "IJPL-175482 Kubernetes: A/B Test for a separate Kubernetes toolwindow"
-           :suffix " **\\[2025.1\\]\\[Fixed\\]**"}
-          {:new    "IJPL-175520 Kubernetes. Exception when refresh action called using the shortcut in some tool windows **\\[Open\\]**"
-           :old    "IJPL-175520 Kubernetes. Exception when refresh action called using the shortcut in some tool windows"
-           :suffix " **\\[Open\\]**"}
-          {:new    "IJPL-180189 Terraform FMT on autosave doesn't work in PHP Storm **\\[Open\\]**"
-           :old    "IJPL-180189 Terraform FMT on autosave doesn't work in PHP Storm"
-           :suffix " **\\[Open\\]**"}
-          {:new    "IJPL-164125 Terraform: T: Module$Companion.getModule: No module root for PsiDirectory on typing when looking for a relative module **\\[2025.1\\]\\[Open\\]**"
-           :old    "IJPL-164125 Terraform: T: Module$Companion .getModule: No module root for PsiDirectory on typing when looking for a relative module"
-           :suffix " **\\[2025.1\\]\\[Open\\]**"}
-          {:new    "IJPL-173823 No completion when the custom JSON schema referenced in the YAML file **\\[Open\\]**"
-           :old    "IJPL-173823 No completion when the custom JSON schema referenced in the YAML file"
-           :suffix " **\\[Open\\]**"}
-          {:new    "IJPL-65348 Terraform.  Add Terraform icon to the Terraform Tools menu  **\\[2024.2.X\\]\\[Reopened\\]**"
-           :old    "IJPL-65348 Terraform. Add Terraform icon to the Terraform Tools menu"
-           :suffix " **\\[2024.2.X\\]\\[Reopened\\]**"}
-          {:new    "IJPL-164360 QuickDoc Fus Reporting Fix **\\[2024.3\\]\\[Open\\]**"
-           :old    "IJPL-164360 QuickDoc Fus Reporting Fix"
-           :suffix " **\\[2024.3\\]\\[Open\\]**"}
-          {:new    "IDEA-356011 Terraform. WSL. Format file fails with \"No file or directory...\" error **\\[Open\\]**"
-           :old    "IDEA-356011 Terraform. WSL. Format file fails with \"No file or directory...\" error"
-           :suffix " **\\[Open\\]**"}
-          {:new    "IJPL-149378 Data Source settings, Kubernetes tab: settings are saved in 1/3 cases **\\[Open\\]**"
-           :old    "IJPL-149378 Data Source settings, Kubernetes tab: settings are saved in 1/3 cases"
-           :suffix " **\\[Open\\]**"}
-          {:new    "IJPL-157584 Rename Delete action and change text in the confirmation dialog **\\[Open\\]**"
-           :old    "IJPL-157584 Rename Delete action and change text in the confirmation dialog"
-           :suffix " **\\[Open\\]**"}
-          {:new    "IJPL-174171 T: KubernetesTableCellRenderer.setValue **\\[Open\\]**"
-           :old    "IJPL-174171 T: KubernetesTableCellRenderer.setValue"
-           :suffix " **\\[Open\\]**"}
-          {:new    "IJPL-64971 Should not adding space between double braces on yaml files **\\[Answered\\]**"
-           :old    "IJPL-64971 Should not adding space between double braces on yaml files"
-           :suffix " **\\[Answered\\]**"}
-          {:new    "IJPL-63579 Composer Version Inspection is Wrong **\\[Open\\]**"
-           :old    "IJPL-63579 Composer Version Inspection is Wrong"
-           :suffix " **\\[Open\\]**"}
-          {:new    "IJPL-179883 DataSource settings in Kubernetes tab are reset on the IDE restart **\\[Open\\]**"
-           :old    "IJPL-179883 DataSource settings in Kubernetes tab are reset on the IDE restart"
-           :suffix " **\\[Open\\]**"}
-          {:new    "IJPL-66781 Data Sources and Drivers - Kubernetes **\\[Open\\]**"
-           :old    "IJPL-66781 Data Sources and Drivers - Kubernetes"
-           :suffix " **\\[Open\\]**"}
-          {:new    "IJPL-173240 NPE when refreshing database with configured k8s port forwarding **\\[Open\\]**"
-           :old    "IJPL-173240 NPE when refreshing database with configured k8s port forwarding"
-           :suffix " **\\[Open\\]**"}
-          {:new    "IJPL-162687 Kubernetes plugin selection doesn't use metadata.name to define the name of namespace **\\[Submitted\\]**"
-           :old    "IJPL-162687 Kubernetes plugin selection doesn't use metadata.name to define the name of namespace"
-           :suffix " **\\[Submitted\\]**"}
-          {:new    "IJPL-165787 Akamai model is out of date **\\[Open\\]**"
-           :old    "IJPL-165787 Terraform plugin, akamai model out of date"
-           :suffix " **\\[Open\\]**"}
-          {:new    "IJPL-162642 IDE doesn't prompt us to enable the telepresence traffic manager **\\[Open\\]**"
-           :old    "IJPL-162642 IDE doesn't prompt us to enable the telepresence traffic manager"
-           :suffix " **\\[Open\\]**"}
-          {:new    "IJPL-171441 Telepresence: telepresence helm install doesn't work with contexts from non-default kubeconfigs **\\[Open\\]**"
-           :old    "IJPL-171441 Telepresence: telepresence helm install doesn't work with contexts from non-default kubeconfigs"
-           :suffix " **\\[Open\\]**"}
-          {:new    "IJPL-171488 Repository Creation Template not supported **\\[Open\\]**"
-           :old    "IJPL-171488 Repository Creation Template not supported"
-           :suffix " **\\[Open\\]**"}
-          {:new    "IJPL-166330 YAML file recognized as Kubernetes one couldn't be reassigned **\\[Open\\]**"
-           :old    "IJPL-166330 YAML file recognized as Kubernetes one couldn't be reassigned"
-           :suffix " **\\[Open\\]**"}
-          {:new    "IJPL-179863 YAML: When pasting a key as path at the end of a YAML file, the file becomes invalid **\\[Open\\]**"
-           :old    "IJPL-179863 YAML: When pasting a key as path at the end of a YAML file, the file becomes invalid"
-           :suffix " **\\[Open\\]**"}
-          {:new    "IJPL-64346 Local JSON schema for YAML file is recognized unstably **\\[Open\\]**"
-           :old    "IJPL-64346 Local JSON schema for YAML file is recognized unstably"
-           :suffix " **\\[Open\\]**"}
-          {:new    "IJPL-173482 IDE prevents Helm charts from updating dependencies **\\[Open\\]**"
-           :old    "IJPL-173482 IDE prevents Helm charts from updating dependencies"
-           :suffix " **\\[Open\\]**"}
-          {:new    "IJPL-155699 GitHub Workflows: Cron: wrong caret position when hitting Enter after cron expression **\\[Open\\]**"
-           :old    "IJPL-155699 GitHub Workflows: Cron: wrong caret position when hitting Enter after cron expression"
-           :suffix " **\\[Open\\]**"}
-          {:new    "IJPL-171685 kubectl tooltip flickering **\\[Open\\]**"
-           :old    "IJPL-171685 kubectl tooltip flickering"
-           :suffix " **\\[Open\\]**"}
-          {:new    "IJPL-66896 Kubernetes: support debug command/ephemeral containers **\\[Requested\\]\\[Open\\]**"
-           :old    "IJPL-66896 Kubernetes: support debug command/ephemeral containers"
-           :suffix " **\\[Requested\\]\\[Open\\]**"}
-          {:new    "- IJPL-67420 Kubernetes: provide an easy way to run temporary Busybox pod in namespace **\\[2025.1\\]\\[Open\\]**"
-           :old    "- IJPL-67420 Kubernetes: provide an easy way to run temporary Busybox pod in namespace"
-           :suffix " **\\[2025.1\\]\\[Open\\]**"}
-          {:new    "IJPL-66806 Kubernetes. Debug support **\\[Requested\\]\\[Open\\]**"
-           :old    "IJPL-66806 Kubernetes. Debug support"
-           :suffix " **\\[Requested\\]\\[Open\\]**"}
-          {:new    "- IJPL-156717 Kubernetes: Attach debugger / profiler **\\[Open\\]**"
-           :old    "- IJPL-156717 Kubernetes: Attach debugger / profiler"
-           :suffix " **\\[Open\\]**"}
-          {:new    "IJPL-162522 Kubernetes. Kubernetes.RefreshModel analytics reports noise **\\[2025.1\\]\\[Open\\]**"
-           :old    "IJPL-162522 Kubernetes. Kubernetes.RefreshModel analytics reports noise"
-           :suffix " **\\[2025.1\\]\\[Open\\]**"}
-          {:new    "IJPL-158211 NPE at com.intellij.kubernetes.view.ui.actions.KubernetesModelBasedDumbAwareAction.actionPerformed **\\[2025.1\\]\\[Open\\]**"
-           :old    "IJPL-158211 NPE at com.intellij.kubernetes.view.ui.actions.KubernetesModelBasedDumbAwareAction.actionPerformed"
-           :suffix " **\\[2025.1\\]\\[Open\\]**"}
-          {:new    "IJPL-155687 Add run configurations for Kubernetes configs **\\[2025.1\\]\\[Open\\]**"
-           :old    "IJPL-155687 Add run configurations for Kubernetes configs"
-           :suffix " **\\[2025.1\\]\\[Open\\]**"}
-          {:new    "IJPL-64404 When defining a YAML schema locally, ensure the path is completed correctly **\\[2025.1\\]\\[Open\\]**"
-           :old    "IJPL-64404 When defining a YAML schema locally, ensure the path is completed correctly"
-           :suffix " **\\[2025.1\\]\\[Open\\]**"}
-          {:new    "IJPL-67480 Kubernetes: show/choose active namespace from editor **\\[2025.1\\]\\[In Design\\]**"
-           :old    "IJPL-67480 Kubernetes: show/choose active namespace from editor"
-           :suffix " **\\[2025.1\\]\\[In Design\\]**"})
- :issues ("IJPL-176233"
-           "IJPL-175028"
-           "IJPL-175482"
-           "IJPL-175520"
-           "IJPL-180189"
-           "IJPL-164125"
-           "IJPL-173823"
-           "IJPL-65348"
-           "IJPL-164360"
-           "IDEA-356011"
-           "IJPL-149378"
-           "IJPL-157584"
-           "IJPL-174171"
-           "IJPL-64971"
-           "IJPL-63579"
-           "IJPL-179883"
-           "IJPL-66781"
-           "IJPL-173240"
-           "IJPL-162687"
-           "IJPL-165787"
-           "IJPL-162642"
-           "IJPL-171441"
-           "IJPL-171488"
-           "IJPL-166330"
-           "IJPL-179863"
-           "IJPL-64346"
-           "IJPL-173482"
-           "IJPL-155699"
-           "IJPL-171685"
-           "IJPL-66896"
-           "IJPL-67420"
-           "IJPL-66806"
-           "IJPL-156717"
-           "IJPL-162522"
-           "IJPL-158211"
-           "IJPL-155687"
-           "IJPL-64404"
-           "IJPL-67480")
- :text   "# Active Backlog
-
-IJPL-176233 Kubernetes. The resource group is collapsed on selection when WATCH is not permitted **\\[Open\\]**
-IJPL-175028 Kubernetes: improve watch api usage statistics **\\[In progress\\]**
-IJPL-175482 Kubernetes: A/B Test for a separate Kubernetes toolwindow **\\[2025.1\\]\\[Fixed\\]**
-IJPL-175520 Kubernetes. Exception when refresh action called using the shortcut in some tool windows **\\[Open\\]**
-IJPL-180189 Terraform FMT on autosave doesn't work in PHP Storm **\\[Open\\]**
-IJPL-164125 Terraform: T: Module$Companion.getModule: No module root for PsiDirectory on typing when looking for a relative module **\\[2025.1\\]\\[Open\\]**
-IJPL-173823 No completion when the custom JSON schema referenced in the YAML file **\\[Open\\]**
-IJPL-65348 Terraform.  Add Terraform icon to the Terraform Tools menu  **\\[2024.2.X\\]\\[Reopened\\]**
-IJPL-164360 QuickDoc Fus Reporting Fix **\\[2024.3\\]\\[Open\\]**
-IDEA-356011 Terraform. WSL. Format file fails with \"No file or directory...\" error **\\[Open\\]**
-IJPL-149378 Data Source settings, Kubernetes tab: settings are saved in 1/3 cases **\\[Open\\]**
-IJPL-157584 Rename Delete action and change text in the confirmation dialog **\\[Open\\]**
-IJPL-174171 T: KubernetesTableCellRenderer.setValue **\\[Open\\]**
-
-# To be prioritised
-
-IJPL-64971 Should not adding space between double braces on yaml files **\\[Answered\\]**
-IJPL-63579 Composer Version Inspection is Wrong **\\[Open\\]**
-IJPL-179883 DataSource settings in Kubernetes tab are reset on the IDE restart **\\[Open\\]**
-IJPL-66781 Data Sources and Drivers - Kubernetes **\\[Open\\]**
-IJPL-173240 NPE when refreshing database with configured k8s port forwarding **\\[Open\\]**
-IJPL-162687 Kubernetes plugin selection doesn't use metadata.name to define the name of namespace **\\[Submitted\\]**
-IJPL-165787 Akamai model is out of date **\\[Open\\]**
-IJPL-162642 IDE doesn't prompt us to enable the telepresence traffic manager **\\[Open\\]**
-IJPL-171441 Telepresence: telepresence helm install doesn't work with contexts from non-default kubeconfigs **\\[Open\\]**
-IJPL-171488 Repository Creation Template not supported **\\[Open\\]**
-
-IJPL-166330 YAML file recognized as Kubernetes one couldn't be reassigned **\\[Open\\]**
-IJPL-179863 YAML: When pasting a key as path at the end of a YAML file, the file becomes invalid **\\[Open\\]**
-IJPL-64346 Local JSON schema for YAML file is recognized unstably **\\[Open\\]**
-IJPL-173482 IDE prevents Helm charts from updating dependencies **\\[Open\\]**
-IJPL-155699 GitHub Workflows: Cron: wrong caret position when hitting Enter after cron expression **\\[Open\\]**
-IJPL-171685 kubectl tooltip flickering **\\[Open\\]**
-
-# Planned for current release
-
-IJPL-66896 Kubernetes: support debug command/ephemeral containers **\\[Requested\\]\\[Open\\]**
-- IJPL-67420 Kubernetes: provide an easy way to run temporary Busybox pod in namespace **\\[2025.1\\]\\[Open\\]**
-
-IJPL-66806 Kubernetes. Debug support **\\[Requested\\]\\[Open\\]**
-- IJPL-156717 Kubernetes: Attach debugger / profiler **\\[Open\\]**
-
-IJPL-162522 Kubernetes. Kubernetes.RefreshModel analytics reports noise **\\[2025.1\\]\\[Open\\]**
-IJPL-158211 NPE at com.intellij.kubernetes.view.ui.actions.KubernetesModelBasedDumbAwareAction.actionPerformed **\\[2025.1\\]\\[Open\\]**
-IJPL-155687 Add run configurations for Kubernetes configs **\\[2025.1\\]\\[Open\\]**
-
-IJPL-64404 When defining a YAML schema locally, ensure the path is completed correctly **\\[2025.1\\]\\[Open\\]**
-
-IJPL-67480 Kubernetes: show/choose active namespace from editor **\\[2025.1\\]\\[In Design\\]**"}
+{:text
+ "# Active Backlog\n\nIJPL-176233 Kubernetes. The resource group is collapsed on selection when WATCH is not permitted **\\[Open\\]**\nIJPL-175028 Kubernetes: improve watch api usage statistics **\\[In progress\\]**\nIJPL-175482 Kubernetes: A/B Test for a separate Kubernetes toolwindow **\\[2025.1\\]\\[Backporting\\]**\nIJPL-175520 Kubernetes. Exception when refresh action called using the shortcut in some tool windows **\\[Open\\]**\nIJPL-180189 Terraform FMT on autosave doesn't work in PHP Storm **\\[Open\\]**\nIJPL-164125 Terraform: T: Module$Companion.getModule: No module root for PsiDirectory on typing when looking for a relative module **\\[2025.1\\]\\[Open\\]**\nIJPL-173823 No completion when the custom JSON schema referenced in the YAML file **\\[Open\\]**\nIJPL-65348 Terraform.  Add Terraform icon to the Terraform Tools menu  **\\[2024.2.X\\]\\[Reopened\\]**\nIJPL-164360 QuickDoc Fus Reporting Fix **\\[2024.3\\]\\[Open\\]**\nIDEA-356011 Terraform. WSL. Format file fails with \"No file or directory...\" error **\\[Open\\]**\nIJPL-149378 Data Source settings, Kubernetes tab: settings are saved in 1/3 cases **\\[Open\\]**\nIJPL-157584 Rename Delete action and change text in the confirmation dialog **\\[Open\\]**\nIJPL-174171 T: KubernetesTableCellRenderer.setValue **\\[Open\\]**\n\n# To be prioritised\n\nIJPL-64971 Should not adding space between double braces on yaml files **\\[Answered\\]**\nIJPL-63579 Composer Version Inspection is Wrong **\\[Open\\]**\nIJPL-179883 DataSource settings in Kubernetes tab are reset on the IDE restart **\\[Open\\]**\nIJPL-66781 Data Sources and Drivers - Kubernetes **\\[Open\\]**\nIJPL-173240 NPE when refreshing database with configured k8s port forwarding **\\[Open\\]**\nIJPL-162687 Kubernetes plugin selection doesn't use metadata.name to define the name of namespace **\\[Submitted\\]**\nIJPL-165787 Akamai model is out of date **\\[Open\\]**\nIJPL-162642 IDE doesn't prompt us to enable the telepresence traffic manager **\\[Open\\]**\nIJPL-171441 Telepresence: telepresence helm install doesn't work with contexts from non-default kubeconfigs **\\[Open\\]**\nIJPL-171488 Repository Creation Template not supported **\\[Open\\]**\n\nIJPL-166330 YAML file recognized as Kubernetes one couldn't be reassigned **\\[Open\\]**\nIJPL-179863 YAML: When pasting a key as path at the end of a YAML file, the file becomes invalid **\\[Open\\]**\nIJPL-64346 Local JSON schema for YAML file is recognized unstably **\\[Open\\]**\nIJPL-173482 IDE prevents Helm charts from updating dependencies **\\[Open\\]**\nIJPL-155699 GitHub Workflows: Cron: wrong caret position when hitting Enter after cron expression **\\[Open\\]**\nIJPL-171685 kubectl tooltip flickering **\\[Open\\]**\n\n# Planned for current release\n\nIJPL-66896 Kubernetes: support debug command/ephemeral containers **\\[Requested\\]\\[Open\\]**\n- IJPL-67420 Kubernetes: provide an easy way to run temporary Busybox pod in namespace **\\[2025.1\\]\\[Open\\]**\n\nIJPL-66806 Kubernetes. Debug support **\\[Requested\\]\\[Open\\]**\n- IJPL-156717 Kubernetes: Attach debugger / profiler **\\[Open\\]**\n\nIJPL-162522 Kubernetes. Kubernetes.RefreshModel analytics reports noise **\\[2025.1\\]\\[Open\\]**\nIJPL-158211 NPE at com.intellij.kubernetes.view.ui.actions.KubernetesModelBasedDumbAwareAction.actionPerformed **\\[2025.1\\]\\[Open\\]**\nIJPL-155687 Add run configurations for Kubernetes configs **\\[2025.1\\]\\[Open\\]**\n\nIJPL-64404 When defining a YAML schema locally, ensure the path is completed correctly **\\[2025.1\\]\\[Open\\]**\n\nIJPL-67480 Kubernetes: show/choose active namespace from editor **\\[2025.1\\]\\[In Design\\]**",
+ :issues
+ ("IJPL-176233"
+  "IJPL-175028"
+  "IJPL-175482"
+  "IJPL-175520"
+  "IJPL-180189"
+  "IJPL-164125"
+  "IJPL-173823"
+  "IJPL-65348"
+  "IJPL-164360"
+  "IDEA-356011"
+  "IJPL-149378"
+  "IJPL-157584"
+  "IJPL-174171"
+  "IJPL-64971"
+  "IJPL-63579"
+  "IJPL-179883"
+  "IJPL-66781"
+  "IJPL-173240"
+  "IJPL-162687"
+  "IJPL-165787"
+  "IJPL-162642"
+  "IJPL-171441"
+  "IJPL-171488"
+  "IJPL-166330"
+  "IJPL-179863"
+  "IJPL-64346"
+  "IJPL-173482"
+  "IJPL-155699"
+  "IJPL-171685"
+  "IJPL-66896"
+  "IJPL-67420"
+  "IJPL-66806"
+  "IJPL-156717"
+  "IJPL-162522"
+  "IJPL-158211"
+  "IJPL-155687"
+  "IJPL-64404"
+  "IJPL-67480"),
+ :diffs
+ ({:old
+   "IJPL-176233 Kubernetes. The resource group is collapsed on selection when WATCH is not permitted",
+   :new
+   "IJPL-176233 Kubernetes. The resource group is collapsed on selection when WATCH is not permitted **\\[Open\\]**",
+   :suffix " **\\[Open\\]**"}
+  {:old "IJPL-175028 Kubernetes: improve watch api usage statistics",
+   :new
+   "IJPL-175028 Kubernetes: improve watch api usage statistics **\\[In progress\\]**",
+   :suffix " **\\[In progress\\]**"}
+  {:old
+   "IJPL-175482 Kubernetes: A/B Test for a separate Kubernetes toolwindow",
+   :new
+   "IJPL-175482 Kubernetes: A/B Test for a separate Kubernetes toolwindow **\\[2025.1\\]\\[Backporting\\]**",
+   :suffix " **\\[2025.1\\]\\[Backporting\\]**"}
+  {:old
+   "IJPL-175520 Kubernetes. Exception when refresh action called using the shortcut in some tool windows",
+   :new
+   "IJPL-175520 Kubernetes. Exception when refresh action called using the shortcut in some tool windows **\\[Open\\]**",
+   :suffix " **\\[Open\\]**"}
+  {:old
+   "IJPL-180189 Terraform FMT on autosave doesn't work in PHP Storm",
+   :new
+   "IJPL-180189 Terraform FMT on autosave doesn't work in PHP Storm **\\[Open\\]**",
+   :suffix " **\\[Open\\]**"}
+  {:old
+   "IJPL-164125 Terraform: T: Module$Companion .getModule: No module root for PsiDirectory on typing when looking for a relative module",
+   :new
+   "IJPL-164125 Terraform: T: Module$Companion.getModule: No module root for PsiDirectory on typing when looking for a relative module **\\[2025.1\\]\\[Open\\]**",
+   :suffix " **\\[2025.1\\]\\[Open\\]**"}
+  {:old
+   "IJPL-173823 No completion when the custom JSON schema referenced in the YAML file",
+   :new
+   "IJPL-173823 No completion when the custom JSON schema referenced in the YAML file **\\[Open\\]**",
+   :suffix " **\\[Open\\]**"}
+  {:old
+   "IJPL-65348 Terraform. Add Terraform icon to the Terraform Tools menu",
+   :new
+   "IJPL-65348 Terraform.  Add Terraform icon to the Terraform Tools menu  **\\[2024.2.X\\]\\[Reopened\\]**",
+   :suffix " **\\[2024.2.X\\]\\[Reopened\\]**"}
+  {:old "IJPL-164360 QuickDoc Fus Reporting Fix",
+   :new
+   "IJPL-164360 QuickDoc Fus Reporting Fix **\\[2024.3\\]\\[Open\\]**",
+   :suffix " **\\[2024.3\\]\\[Open\\]**"}
+  {:old
+   "IDEA-356011 Terraform. WSL. Format file fails with \"No file or directory...\" error",
+   :new
+   "IDEA-356011 Terraform. WSL. Format file fails with \"No file or directory...\" error **\\[Open\\]**",
+   :suffix " **\\[Open\\]**"}
+  {:old
+   "IJPL-149378 Data Source settings, Kubernetes tab: settings are saved in 1/3 cases",
+   :new
+   "IJPL-149378 Data Source settings, Kubernetes tab: settings are saved in 1/3 cases **\\[Open\\]**",
+   :suffix " **\\[Open\\]**"}
+  {:old
+   "IJPL-157584 Rename Delete action and change text in the confirmation dialog",
+   :new
+   "IJPL-157584 Rename Delete action and change text in the confirmation dialog **\\[Open\\]**",
+   :suffix " **\\[Open\\]**"}
+  {:old "IJPL-174171 T: KubernetesTableCellRenderer.setValue",
+   :new
+   "IJPL-174171 T: KubernetesTableCellRenderer.setValue **\\[Open\\]**",
+   :suffix " **\\[Open\\]**"}
+  {:old
+   "IJPL-64971 Should not adding space between double braces on yaml files",
+   :new
+   "IJPL-64971 Should not adding space between double braces on yaml files **\\[Answered\\]**",
+   :suffix " **\\[Answered\\]**"}
+  {:old "IJPL-63579 Composer Version Inspection is Wrong",
+   :new
+   "IJPL-63579 Composer Version Inspection is Wrong **\\[Open\\]**",
+   :suffix " **\\[Open\\]**"}
+  {:old
+   "IJPL-179883 DataSource settings in Kubernetes tab are reset on the IDE restart",
+   :new
+   "IJPL-179883 DataSource settings in Kubernetes tab are reset on the IDE restart **\\[Open\\]**",
+   :suffix " **\\[Open\\]**"}
+  {:old "IJPL-66781 Data Sources and Drivers - Kubernetes",
+   :new
+   "IJPL-66781 Data Sources and Drivers - Kubernetes **\\[Open\\]**",
+   :suffix " **\\[Open\\]**"}
+  {:old
+   "IJPL-173240 NPE when refreshing database with configured k8s port forwarding",
+   :new
+   "IJPL-173240 NPE when refreshing database with configured k8s port forwarding **\\[Open\\]**",
+   :suffix " **\\[Open\\]**"}
+  {:old
+   "IJPL-162687 Kubernetes plugin selection doesn't use metadata.name to define the name of namespace",
+   :new
+   "IJPL-162687 Kubernetes plugin selection doesn't use metadata.name to define the name of namespace **\\[Submitted\\]**",
+   :suffix " **\\[Submitted\\]**"}
+  {:old "IJPL-165787 Terraform plugin, akamai model out of date",
+   :new "IJPL-165787 Akamai model is out of date **\\[Open\\]**",
+   :suffix " **\\[Open\\]**"}
+  {:old
+   "IJPL-162642 IDE doesn't prompt us to enable the telepresence traffic manager",
+   :new
+   "IJPL-162642 IDE doesn't prompt us to enable the telepresence traffic manager **\\[Open\\]**",
+   :suffix " **\\[Open\\]**"}
+  {:old
+   "IJPL-171441 Telepresence: telepresence helm install doesn't work with contexts from non-default kubeconfigs",
+   :new
+   "IJPL-171441 Telepresence: telepresence helm install doesn't work with contexts from non-default kubeconfigs **\\[Open\\]**",
+   :suffix " **\\[Open\\]**"}
+  {:old "IJPL-171488 Repository Creation Template not supported",
+   :new
+   "IJPL-171488 Repository Creation Template not supported **\\[Open\\]**",
+   :suffix " **\\[Open\\]**"}
+  {:old
+   "IJPL-166330 YAML file recognized as Kubernetes one couldn't be reassigned",
+   :new
+   "IJPL-166330 YAML file recognized as Kubernetes one couldn't be reassigned **\\[Open\\]**",
+   :suffix " **\\[Open\\]**"}
+  {:old
+   "IJPL-179863 YAML: When pasting a key as path at the end of a YAML file, the file becomes invalid",
+   :new
+   "IJPL-179863 YAML: When pasting a key as path at the end of a YAML file, the file becomes invalid **\\[Open\\]**",
+   :suffix " **\\[Open\\]**"}
+  {:old
+   "IJPL-64346 Local JSON schema for YAML file is recognized unstably",
+   :new
+   "IJPL-64346 Local JSON schema for YAML file is recognized unstably **\\[Open\\]**",
+   :suffix " **\\[Open\\]**"}
+  {:old
+   "IJPL-173482 IDE prevents Helm charts from updating dependencies",
+   :new
+   "IJPL-173482 IDE prevents Helm charts from updating dependencies **\\[Open\\]**",
+   :suffix " **\\[Open\\]**"}
+  {:old
+   "IJPL-155699 GitHub Workflows: Cron: wrong caret position when hitting Enter after cron expression",
+   :new
+   "IJPL-155699 GitHub Workflows: Cron: wrong caret position when hitting Enter after cron expression **\\[Open\\]**",
+   :suffix " **\\[Open\\]**"}
+  {:old "IJPL-171685 kubectl tooltip flickering",
+   :new "IJPL-171685 kubectl tooltip flickering **\\[Open\\]**",
+   :suffix " **\\[Open\\]**"}
+  {:old
+   "IJPL-66896 Kubernetes: support debug command/ephemeral containers",
+   :new
+   "IJPL-66896 Kubernetes: support debug command/ephemeral containers **\\[Requested\\]\\[Open\\]**",
+   :suffix " **\\[Requested\\]\\[Open\\]**"}
+  {:old
+   "- IJPL-67420 Kubernetes: provide an easy way to run temporary Busybox pod in namespace",
+   :new
+   "- IJPL-67420 Kubernetes: provide an easy way to run temporary Busybox pod in namespace **\\[2025.1\\]\\[Open\\]**",
+   :suffix " **\\[2025.1\\]\\[Open\\]**"}
+  {:old "IJPL-66806 Kubernetes. Debug support",
+   :new
+   "IJPL-66806 Kubernetes. Debug support **\\[Requested\\]\\[Open\\]**",
+   :suffix " **\\[Requested\\]\\[Open\\]**"}
+  {:old "- IJPL-156717 Kubernetes: Attach debugger / profiler",
+   :new
+   "- IJPL-156717 Kubernetes: Attach debugger / profiler **\\[Open\\]**",
+   :suffix " **\\[Open\\]**"}
+  {:old
+   "IJPL-162522 Kubernetes. Kubernetes.RefreshModel analytics reports noise",
+   :new
+   "IJPL-162522 Kubernetes. Kubernetes.RefreshModel analytics reports noise **\\[2025.1\\]\\[Open\\]**",
+   :suffix " **\\[2025.1\\]\\[Open\\]**"}
+  {:old
+   "IJPL-158211 NPE at com.intellij.kubernetes.view.ui.actions.KubernetesModelBasedDumbAwareAction.actionPerformed",
+   :new
+   "IJPL-158211 NPE at com.intellij.kubernetes.view.ui.actions.KubernetesModelBasedDumbAwareAction.actionPerformed **\\[2025.1\\]\\[Open\\]**",
+   :suffix " **\\[2025.1\\]\\[Open\\]**"}
+  {:old "IJPL-155687 Add run configurations for Kubernetes configs",
+   :new
+   "IJPL-155687 Add run configurations for Kubernetes configs **\\[2025.1\\]\\[Open\\]**",
+   :suffix " **\\[2025.1\\]\\[Open\\]**"}
+  {:old
+   "IJPL-64404 When defining a YAML schema locally, ensure the path is completed correctly",
+   :new
+   "IJPL-64404 When defining a YAML schema locally, ensure the path is completed correctly **\\[2025.1\\]\\[Open\\]**",
+   :suffix " **\\[2025.1\\]\\[Open\\]**"}
+  {:old
+   "IJPL-67480 Kubernetes: show/choose active namespace from editor",
+   :new
+   "IJPL-67480 Kubernetes: show/choose active namespace from editor **\\[2025.1\\]\\[In Design\\]**",
+   :suffix " **\\[2025.1\\]\\[In Design\\]**"})}
