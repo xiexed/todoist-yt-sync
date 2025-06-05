@@ -48,7 +48,7 @@
                         <q-btn flat round dense icon="clear" @click="outputClose(output)"></q-btn>
                     </q-toolbar>
                     <div class="q-pa-md">
-                        <div v-if="output.data.text">{{ output.data.text }}</div>
+                        <div v-if="output.data.text" v-html="renderText(output.data.text)"></div>
                         <div v-if="output.data.html" v-html="output.data.html"></div>
                         <div v-if="output.data['text-out']">
                             <pre @click.native="$event.target.select()">{{ output.data['text-out'] }}</pre>
@@ -313,6 +313,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/vue@^2.0.0/dist/vue.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/quasar@1.14.5/dist/quasar.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 <script>
     /*
@@ -409,6 +410,12 @@
                 } catch (err) {
                     console.error('Error cancelling operation:', err);
                 }
+            },
+
+            renderText(text) {
+                const md = text.replace(/([A-Z]+-\d+)/g,
+                    (m) => `[${m}](https://youtrack.jetbrains.com/issue/${m})`);
+                return marked.parse(md);
             },
             
             onSubmit() {
