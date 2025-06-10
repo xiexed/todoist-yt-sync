@@ -58,10 +58,10 @@
   "Detects if backport is necessary based on backport tags or planned-for/included-in mismatch"
   (let [{:keys [tags planned-for included-in]} issue-data
         has-backport-tag? (some #(str/starts-with? % "backport-to-") tags)
-        planned-for-set (set planned-for)
+        planned-for-set (set (remove #( = % "Requested") planned-for))
         normalized-included-in (set (keep normalize-version included-in))
-        versions-mismatch? (not= planned-for-set normalized-included-in)]
-    (or has-backport-tag? versions-mismatch?)))
+        missing-versions? (not (every? normalized-included-in planned-for-set))]
+    (and (not-empty planned-for-set) (or has-backport-tag? missing-versions?))))
 
 ; (map #(wd/load-issue-data my-yt-token %) (mapcat :issues (wd/parse-md-to-sections text)))
 (defn load-issue-data [yt-token issue]
