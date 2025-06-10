@@ -58,7 +58,10 @@
   "Detects if backport is necessary based on backport tags or planned-for/included-in mismatch"
   (let [{:keys [tags planned-for included-in]} issue-data
         has-backport-tag? (some #(str/starts-with? % "backport-to-") tags)
-        planned-for-set (set (remove #( = % "Requested") planned-for))
+        planned-for-set (->> planned-for
+                             (remove #(= % "Requested"))
+                             (map (fn [pf] (->> (str/split pf #"\.") (take 2) (str/join "."))))
+                             (set))
         normalized-included-in (set (keep normalize-version included-in))
         missing-versions? (not (every? normalized-included-in planned-for-set))]
     (and (not-empty planned-for-set) (or has-backport-tag? missing-versions?))))

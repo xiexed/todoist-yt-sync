@@ -62,11 +62,24 @@
                       :customFields [{:name "Verified" :value nil}]}]
       (is (= "Not-verified" (:state (wd/enhance-issue-state issue-data))))))
 
+  (testing "dotted versions"
+    (let [issue-data {:tags        ["blocking-release"],
+                      :type        "Bug",
+                      :state       "Fixed",
+                      :included-in ["252.18515" "252.19874.12" "251.26600"],
+                      :resolved    1748468930516,
+                      :summary     "JSON. Cannot load the latest OpenAPI Specification schema",
+                      :planned-for ["2025.2" "2025.1.3"],
+                      :id          "25-6537936",
+                      :assignee    "Nicolay Mitropolsky",
+                      :idReadable  "IJPL-188228"}]
+      (is (= "Not-verified" (:state (wd/enhance-issue-state issue-data))))))
+
   (testing "Fixed state with empty planned-for returns 'Not-verified'"
-    (let [issue-data {:state "Fixed"
-                      :tags []
-                      :planned-for []
-                      :included-in ["252.18515"]
+    (let [issue-data {:state        "Fixed"
+                      :tags         []
+                      :planned-for  []
+                      :included-in  ["252.18515"]
                       :customFields [{:name "Verified" :value nil}]}]
       (is (= "Not-verified" (:state (wd/enhance-issue-state issue-data))))))
 
