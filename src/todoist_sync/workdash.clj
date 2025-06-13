@@ -83,7 +83,8 @@
      :tags        (map :name (:tags issue-data))
      :included-in (map :name (custom-field issue-data "Included in builds"))
      :planned-for (map :name (custom-field issue-data "Planned for"))
-     :verified    (:name (custom-field issue-data "Verified"))}))
+     :verified    (:name (custom-field issue-data "Verified"))
+     :triaged    (:name (custom-field issue-data "Triaged"))}))
 
 (defmacro record-issue-data-loads [filename & body]
   `(let [old# load-issue-data
@@ -141,13 +142,16 @@
   (assoc issue-data :state
                     (let [recorded-state (:state issue-data)
                           verified (:verified issue-data)]
-                      (if (= recorded-state "Fixed")
+                      (cond
+                        (= recorded-state "Fixed")
                         (cond
                           (backport-necessary? issue-data) "Backporting"
                           (= "Yes" verified) "Verified"
                           (= "Not Needed" verified) "Fixed"
                           :else "Not-verified")
-                        recorded-state))))
+
+                        (= (:triaged issue-data) "Escalated") "Escalated"
+                        :else recorded-state))))
 
 (defn patch-outdated [yt-token src renderer]
   (let [lines (str/split-lines src)
