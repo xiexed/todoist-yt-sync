@@ -82,7 +82,8 @@
      :type        (:name (custom-field issue-data "Type"))
      :tags        (map :name (:tags issue-data))
      :included-in (map :name (custom-field issue-data "Included in builds"))
-     :planned-for (map :name (custom-field issue-data "Planned for"))}))
+     :planned-for (map :name (custom-field issue-data "Planned for"))
+     :verified    (:name (custom-field issue-data "Verified"))}))
 
 (defmacro record-issue-data-loads [filename & body]
   `(let [old# load-issue-data
@@ -127,7 +128,7 @@
 
 (defn wd-line-render [issue keys]
   (let [{:keys [body suffix]} (render issue keys)]
-    (if (= "Verified" (:state issue))
+    (if (#{"Verified" "Fixed"} (:state issue))
       {:suffix suffix}
       {:suffix suffix
        :body   body})))
@@ -139,13 +140,14 @@
 (defn enhance-issue-state [issue-data]
   (assoc issue-data :state
                     (let [recorded-state (:state issue-data)
-                                 verified (:name (custom-field issue-data "Verified"))]
-                             (if (= recorded-state "Fixed")
-                               (cond
-                                 (backport-necessary? issue-data) "Backporting"
-                                 verified "Verified"
-                                 :else "Not-verified")
-                               recorded-state))))
+                          verified (:verified issue-data)]
+                      (if (= recorded-state "Fixed")
+                        (cond
+                          (backport-necessary? issue-data) "Backporting"
+                          (= "Yes" verified) "Verified"
+                          (= "Not Needed" verified) "Fixed"
+                          :else "Not-verified")
+                        recorded-state))))
 
 (defn patch-outdated [yt-token src renderer]
   (let [lines (str/split-lines src)

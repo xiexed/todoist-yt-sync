@@ -27,7 +27,7 @@
                       :tags ["backport-to-251"]
                       :planned-for ["2025.2" "2025.1.X"]
                       :included-in ["252.18515"]
-                      :customFields [{:name "Verified" :value nil}]}]
+                      :verified nil}]
       (is (= "Backporting" (:state (wd/enhance-issue-state issue-data))))))
 
   (testing "Fixed state with version mismatch returns 'Backporting'"
@@ -35,7 +35,7 @@
                       :tags []
                       :planned-for ["2025.2" "2025.1.X"]
                       :included-in ["252.18515"]
-                      :customFields [{:name "Verified" :value nil}]}]
+                      :verified nil}]
       (is (= "Backporting" (:state (wd/enhance-issue-state issue-data))))))
 
   (testing "Fixed state with verified field returns 'Verified'"
@@ -43,7 +43,7 @@
                       :tags []
                       :planned-for ["2025.2"]
                       :included-in ["252.18515"]
-                      :customFields [{:name "Verified" :value {:name "Yes"}}]}]
+                      :verified "Yes"}]
       (is (= "Verified" (:state (wd/enhance-issue-state issue-data))))))
 
   (testing "Fixed state without backport or verification returns 'Not-verified'"
@@ -51,7 +51,7 @@
                       :tags []
                       :planned-for ["2025.2"]
                       :included-in ["252.18515"]
-                      :customFields [{:name "Verified" :value nil}]}]
+                      :verified nil}]
       (is (= "Not-verified" (:state (wd/enhance-issue-state issue-data))))))
 
   (testing "Included can be wider than planned for"
@@ -59,7 +59,7 @@
                       :tags []
                       :planned-for ["2025.2"]
                       :included-in ["252.18515" "251.15231"]
-                      :customFields [{:name "Verified" :value nil}]}]
+                      :verified nil}]
       (is (= "Not-verified" (:state (wd/enhance-issue-state issue-data))))))
 
   (testing "dotted versions"
@@ -80,7 +80,7 @@
                       :tags         []
                       :planned-for  []
                       :included-in  ["252.18515"]
-                      :customFields [{:name "Verified" :value nil}]}]
+                      :verified nil}]
       (is (= "Not-verified" (:state (wd/enhance-issue-state issue-data))))))
 
   (testing "Fixed state with 'Requested' in planned-for returns 'Not-verified'"
@@ -88,7 +88,7 @@
                       :tags []
                       :planned-for ["Requested"]
                       :included-in ["252.18515"]
-                      :customFields [{:name "Verified" :value nil}]}]
+                      :verified nil}]
       (is (= "Not-verified" (:state (wd/enhance-issue-state issue-data))))))
 
   (testing "Non-Fixed states return original state unchanged"
@@ -101,7 +101,7 @@
                           :tags []
                           :planned-for ["2025.2"]
                           :included-in ["252.18515"]
-                          :customFields [{:name "Verified" :value nil}]}]
+                          :verified nil}]
           (is (= expected-state (:state (wd/enhance-issue-state issue-data)))
               (str "Expected " original-state " to remain unchanged"))))))
 
@@ -113,7 +113,7 @@
                       :tags []
                       :planned-for ["2025.2"]
                       :included-in ["252.18515"]
-                      :customFields [{:name "Verified" :value nil}]}
+                      :verified nil}
           enhanced (wd/enhance-issue-state issue-data)]
       (is (= "IJPL-123456" (:idReadable enhanced)))
       (is (= "Test issue" (:summary enhanced)))
