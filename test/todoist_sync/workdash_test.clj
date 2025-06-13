@@ -46,6 +46,14 @@
                       :verified "Yes"}]
       (is (= "Verified" (:state (wd/enhance-issue-state issue-data))))))
 
+  (testing "Fixed state with verified 'Not Needed' returns 'Fixed'"
+    (let [issue-data {:state "Fixed"
+                      :tags []
+                      :planned-for ["2025.2"]
+                      :included-in ["252.18515"]
+                      :verified "Not Needed"}]
+      (is (= "Fixed" (:state (wd/enhance-issue-state issue-data))))))
+
   (testing "Fixed state without backport or verification returns 'Not-verified'"
     (let [issue-data {:state "Fixed"
                       :tags []
@@ -90,6 +98,24 @@
                       :included-in ["252.18515"]
                       :verified nil}]
       (is (= "Not-verified" (:state (wd/enhance-issue-state issue-data))))))
+
+  (testing "Triaged 'Escalated' returns 'Escalated' state"
+    (let [issue-data {:state "Open"
+                      :tags []
+                      :planned-for ["2025.2"]
+                      :included-in ["252.18515"]
+                      :verified nil
+                      :triaged "Escalated"}]
+      (is (= "Escalated" (:state (wd/enhance-issue-state issue-data))))))
+
+  (testing "Triaged 'Escalated' with Fixed state and verified returns 'Verified' (Fixed logic takes precedence)"
+    (let [issue-data {:state "Fixed"
+                      :tags []
+                      :planned-for ["2025.2"]
+                      :included-in ["252.18515"]
+                      :verified "Yes"
+                      :triaged "Escalated"}]
+      (is (= "Verified" (:state (wd/enhance-issue-state issue-data))))))
 
   (testing "Non-Fixed states return original state unchanged"
     (let [test-cases [["Open" "Open"]
