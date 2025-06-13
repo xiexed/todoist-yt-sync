@@ -109,13 +109,15 @@
       (str
         (when-let [type (:type issue)]
           (str "[" (if (= "Meta Issue" type) "Meta" (get-first-letters type)) "]"))
+        (when-let [pf (not-empty (:planned-for issue))]
+          (str "[" (str/join "," pf) "]"))
         (when (some #{:assignee} keys)
           (str "[" (assignee) "]"))
         (when-let [bold (not-empty
                           (str
                             (when (some #{:assignee-b} keys)
                               (str "\\[" (assignee) "\\]"))
-                            (when-let [pf (not-empty (:planned-for issue))]
+                            (when-let [pf (not-empty (:planned-for-b issue))]
                               (str "\\[" (str/join "," pf) "\\]"))
                             (when (some #{:state} keys)
                               (str "\\[" (:state issue) "\\]"))))]
