@@ -84,7 +84,7 @@
      :included-in (map :name (custom-field issue-data "Included in builds"))
      :planned-for (map :name (custom-field issue-data "Planned for"))
      :verified    (:name (custom-field issue-data "Verified"))
-     :triaged    (:name (custom-field issue-data "Triaged"))}))
+     :triaged     (:name (custom-field issue-data "Triaged"))}))
 
 (defmacro record-issue-data-loads [filename & body]
   `(let [old# load-issue-data
@@ -197,13 +197,13 @@
                                  line)}))))
 
 (defn patch-outdated-plan-on-server [yt-token]
-  (let [article (load-article yt-token "IDEA-A-2100662404")
-        original-content (:content article)
-        patched (patch-outdated-plan yt-token original-content)]
-    (update-article yt-token (:idReadable article) (:text patched))
-    [{:id    (:idReadable article)
-      :name  (:summary article)
-      :diffs (:diffs patched)}]))
+  (map (fn [article] (let [original-content (:content article)
+                           patched (patch-outdated-plan yt-token original-content)]
+                       (update-article yt-token (:idReadable article) (:text patched))
+                       {:id    (:idReadable article)
+                        :name  (:summary article)
+                        :diffs (:diffs patched)}))
+       (yt-client/get-all-from-yt-lazy {:key yt-token} "articles" {:query "tag: managed-plan" :fields "idReadable,content,summary"} {})))
 
 (defn patch-dashboards [yt-token dir]
   (doseq [article (load-dashboard-articles yt-token)]

@@ -24,6 +24,16 @@
   ([conf path query params]
    (:body (yt-request conf :get path (assoc params :query-params query)))))
 
+(defn get-all-from-yt-lazy [conf path query params]
+  ((fn cons-load [skip]
+     (let [chunk-size 500
+           chunk (get-from-yt conf path (merge query {:$skip skip :$top chunk-size}) params)]
+       (if (< (count chunk) chunk-size)
+         chunk
+         (->> (concat chunk (lazy-seq (cons-load (+ skip chunk-size))))
+              (filter (fn [arg] (not (.isInterrupted (Thread/currentThread)))))))))
+   0))
+
 (defn update-on-yt
   ([conf path data]
    (update-on-yt conf path data {}))
@@ -43,14 +53,7 @@
   ([conf query y-params]
    (issues conf query y-params {}))
   ([conf query {:keys [fields]} req-params]
-   ((fn cons-load [skip]
-      (let [chunk-size 500
-            chunk (get-from-yt conf "issues" {:fields (or fields *default-issue-fields*) :$skip skip :$top chunk-size :query query} req-params)]
-        (if (< (count chunk) chunk-size)
-          chunk
-          (->> (concat chunk (lazy-seq (cons-load (+ skip chunk-size))))
-               (filter (fn [arg] (not (.isInterrupted (Thread/currentThread)))))))))
-    0)))
+   (get-all-from-yt-lazy conf "issues" {:fields (or fields *default-issue-fields*) :query query} req-params)))
 
 (defn issue
   ([conf id] (issue conf id {}))
