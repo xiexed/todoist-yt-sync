@@ -2,6 +2,7 @@
   (:require [clojure.string :as str]
             [todoist-sync.yt-client :as yt-client :refer [custom-field]]
             [todoist-sync.utils.utils :as u]
+            [java-time :as t]
             [clojure.string :as s]))
 
 (defn load-dashboard-articles
@@ -256,3 +257,10 @@
          (keep (fn [patched]
                  (when (not-empty (concat (:diffs patched) (:missed patched)))
                    patched))))))
+
+
+(defn load-article-versions [yt-token article dir]
+  (doseq [change (yt-client/get-from-yt {:key yt-token} (str "articles/" article "/activities") {:categories "ArticleDescriptionCategory" :fields "timestamp,added,removed"} {})]
+    (let [dir (clojure.java.io/file dir)]
+      (.mkdirs dir)
+      (spit (clojure.java.io/file dir (str (-> (:timestamp change) (t/instant) (t/local-date-time "GMT0") (t/format)) ".md")) (:added change)))))
