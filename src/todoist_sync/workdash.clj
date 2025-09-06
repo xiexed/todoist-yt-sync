@@ -79,20 +79,20 @@
                                                (str "issues/" issue)
                                                {:fields "id,idReadable,summary,resolved,customFields(id,name,value(name, value, id)),tags(name)"})
                         (u/enhance-error (str "issue:" issue)))]
-    {:idReadable  (:idReadable issue-data)
-     :summary     (:summary issue-data)
-     :id          (:id issue-data)
-     :resolved    (:resolved issue-data)
-     :assignee    (:name (custom-field issue-data "Assignee"))
-     :state       (:name (custom-field issue-data "State"))
-     :type        (:name (custom-field issue-data "Type"))
-     :tags        (map :name (:tags issue-data))
-     :included-in (map :name (custom-field issue-data "Included in builds"))
-     :planned-for (map :name (custom-field issue-data "Planned for"))
+    {:idReadable   (:idReadable issue-data)
+     :summary      (:summary issue-data)
+     :id           (:id issue-data)
+     :resolved     (:resolved issue-data)
+     :assignee     (:name (custom-field issue-data "Assignee"))
+     :state        (:name (custom-field issue-data "State"))
+     :type         (:name (custom-field issue-data "Type"))
+     :tags         (map :name (:tags issue-data))
+     :included-in  (map :name (custom-field issue-data "Included in builds"))
+     :planned-for  (map :name (custom-field issue-data "Planned for"))
      :available-in (map :name (custom-field issue-data "Available in"))
-     :qa (:name (custom-field issue-data "QA"))
-     :verified    (:name (custom-field issue-data "Verified"))
-     :triaged     (:name (custom-field issue-data "Triaged"))}))
+     :qa           (:name (custom-field issue-data "QA"))
+     :verified     (:name (custom-field issue-data "Verified"))
+     :triaged      (:name (custom-field issue-data "Triaged"))}))
 
 (defmacro record-issue-data-loads [filename & body]
   `(let [old# load-issue-data
@@ -115,6 +115,8 @@
   (let [assignee #(or (some-> (:assignee issue) (get-first-letters)) "Unassigned")]
     (not-empty
       (str
+        (when-let [d (:duplicate-number issue)]
+          (str "[" d "]"))
         (when-let [type (:type issue)]
           (str "[" (if (= "Meta Issue" type) "Meta" (get-first-letters type)) "]"))
         (when-let [pf (not-empty (:planned-for issue))]
@@ -169,12 +171,28 @@
         render-fn (cond
                     (fn? renderer) renderer
                     (vector? renderer) (fn [is] (render is renderer)))
+        parse-md-line (memoize parse-md-line)
+        all-issues (->> lines
+                        (map parse-md-line)
+                        (filter #(= :issue (:type %)))
+                        (map :value))
+        duplicate-issues (set (->> all-issues
+                                   (frequencies)
+                                   (filter (fn [[_ count]] (> count 1)))
+                                   (map first)))
+        issue-counters (atom {})
         processed-lines (map (fn [line]
                                (let [parsed (parse-md-line line)]
                                  (if (= :issue (:type parsed))
-                                   (let [issue (enhance-issue-state (load-issue-data yt-token (:value parsed)))
+                                   (let [issue-id (:value parsed)
+                                         issue (enhance-issue-state (load-issue-data yt-token issue-id))
+                                         ; Add numbering for duplicates
+                                         issue-with-number (if (duplicate-issues issue-id)
+                                                             (let [current-count (swap! issue-counters update issue-id (fnil inc 0))]
+                                                               (assoc issue :duplicate-number (current-count issue-id)))
+                                                             issue)
                                          spaces (re-find line-space-pattern line)
-                                         {:keys [body suffix]} (render-fn (merge issue
+                                         {:keys [body suffix]} (render-fn (merge issue-with-number
                                                                                  {:line (str/replace-first line spaces "")}))
                                          new-line (when body (str spaces body suffix))]
                                      {:line  new-line

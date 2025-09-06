@@ -4,14 +4,18 @@
           {:new    "IJPL-123456 Version mismatch issue [B][2025.2,2025.1.X][Backporting]"
            :old    "IJPL-123456 Version mismatch issue"
            :suffix " [B][2025.2,2025.1.X][Backporting]"}
-          {:new    "IJPL-789012 No backport needed [F][2025.2][Testing]"
+          {:new    "IJPL-789012 No backport needed [1][F][2025.2][Testing]"
            :old    "IJPL-789012 No backport needed"
-           :suffix " [F][2025.2][Testing]"}
+           :suffix " [1][F][2025.2][Testing]"}
+          {:new    "IJPL-789012 No backport needed [2][F][2025.2][Testing]"
+           :old    "IJPL-789012 No backport needed"
+           :suffix " [2][F][2025.2][Testing]"}
           {:new    "IJPL-345678 Empty collections [T][Open]"
            :old    "IJPL-345678 Empty collections"
            :suffix " [T][Open]"})
  :issues ("IJPL-188228"
            "IJPL-123456"
            "IJPL-789012"
+           "IJPL-789012"
            "IJPL-345678")
- :text   "IJPL-188228 JSON. Cannot load the latest OpenAPI Specification schema [B][2025.2,2025.1.X][Backporting]\nIJPL-123456 Version mismatch issue [B][2025.2,2025.1.X][Backporting]\nIJPL-789012 No backport needed [F][2025.2][Testing]\nIJPL-345678 Empty collections [T][Open]"}
+ :text   "IJPL-188228 JSON. Cannot load the latest OpenAPI Specification schema [B][2025.2,2025.1.X][Backporting]\nIJPL-123456 Version mismatch issue [B][2025.2,2025.1.X][Backporting]\nIJPL-789012 No backport needed [1][F][2025.2][Testing]\nIJPL-789012 No backport needed [2][F][2025.2][Testing]\nIJPL-345678 Empty collections [T][Open]"}
