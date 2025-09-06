@@ -215,7 +215,23 @@
                             <div v-for="person in output.data" :key="person.id" class="q-mt-md">
                                 <q-card bordered>
                                     <q-card-section class="bg-primary text-white">
-                                        <div class="text-h6">{{ person.name }}</div>
+                                        <div class="text-h6">
+                                            <a v-if="person.id.startsWith('IDEA-A')" 
+                                               target="_blank" 
+                                               rel="noopener noreferrer" 
+                                               :href="'https://youtrack.jetbrains.com/articles/' + person.id"
+                                               style="color: white; text-decoration: none;">
+                                                {{ person.name }}
+                                            </a>
+                                            <a v-else-if="person.id.match(/^[A-Z]{2,10}-\d+$/)" 
+                                               target="_blank" 
+                                               rel="noopener noreferrer" 
+                                               :href="'https://youtrack.jetbrains.com/issue/' + person.id"
+                                               style="color: white; text-decoration: none;">
+                                                {{ person.name }}
+                                            </a>
+                                            <span v-else>{{ person.name }}</span>
+                                        </div>
                                     </q-card-section>
                                     <q-card-section v-if="person.diffs && person.diffs.length > 0">
                                             <li v-for="(diff, index) in person.diffs" :key="index">
