@@ -121,13 +121,13 @@
           (str "[" (str/join "," pf) "]"))
         (when (some #{:assignee} keys)
           (str "[" (assignee) "]"))
+        (when (some #{:state} keys)
+          (str "[" (:state issue) "]"))
         (when-let [bold (not-empty
                           (str
                             (when (some #{:assignee-b} keys)
                               (str "\\[" (assignee) "\\]"))
-                            (when-let [pf (not-empty (:planned-for-b issue))]
-                              (str "\\[" (str/join "," pf) "\\]"))
-                            (when (some #{:state} keys)
+                            (when (some #{:state-b} keys)
                               (str "\\[" (:state issue) "\\]"))))]
           (str "**" bold "**"))))))
 
@@ -146,7 +146,7 @@
 
 (defn wd-conditional-assignee-renderer [main-assignee]
   (fn [iss] (wd-line-render iss [(when (not= main-assignee (:assignee iss)) :assignee-b)
-                                 (when (not= "Open" (:state iss)) :state)])))
+                                 (when (not= "Open" (:state iss)) (if (= "No QA" (:state iss)) :state-b :state))])))
 
 (defn enhance-issue-state [issue-data]
   (assoc issue-data :state
