@@ -8,7 +8,8 @@
   :type "Bug",
   :tags ["blocking-release" "backport-to-251"],
   :included-in ["252.18515"],
-  :planned-for ["2025.2" "2025.1.X"]},
+  :planned-for ["2025.2" "2025.1.X"]
+  :qa "Polina"},
  "IJPL-123456"
  {:idReadable "IJPL-123456",
   :summary "Version mismatch issue",
@@ -19,7 +20,8 @@
   :type "Bug", 
   :tags ["bug"],
   :included-in ["252.18515"],
-  :planned-for ["2025.2" "2025.1.X"]},
+  :planned-for ["2025.2" "2025.1.X"]
+  :qa "Polina"},
  "IJPL-789012"
  {:idReadable "IJPL-789012",
   :summary "No backport needed",
@@ -30,7 +32,8 @@
   :type "Feature",
   :tags ["enhancement"],
   :included-in ["252.18515"],
-  :planned-for ["2025.2"]},
+  :planned-for ["2025.2"]
+  :qa "Polina"},
  "IJPL-345678"
  {:idReadable "IJPL-345678",
   :summary "Empty collections",
@@ -41,4 +44,5 @@
   :type "Task",
   :tags [],
   :included-in [],
-  :planned-for []}}
+  :planned-for []
+  :qa "Polina"}}

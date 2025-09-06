@@ -90,6 +90,7 @@
      :included-in (map :name (custom-field issue-data "Included in builds"))
      :planned-for (map :name (custom-field issue-data "Planned for"))
      :available-in (map :name (custom-field issue-data "Available in"))
+     :qa (:name (custom-field issue-data "QA"))
      :verified    (:name (custom-field issue-data "Verified"))
      :triaged     (:name (custom-field issue-data "Triaged"))}))
 
@@ -157,7 +158,8 @@
                           (backport-necessary? issue-data) "Backporting"
                           (= "Yes" verified) "Verified"
                           (= "Not Needed" verified) "Fixed"
-                          :else "Not-verified")
+                          (= nil (:qa issue-data)) "No QA"
+                          :else "Testing")
 
                         (= (:triaged issue-data) "Escalated") "Escalated"
                         :else recorded-state))))

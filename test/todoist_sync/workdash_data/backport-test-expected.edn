@@ -4,9 +4,9 @@
           {:new    "IJPL-123456 Version mismatch issue [B][2025.2,2025.1.X]**\\[Backporting\\]**"
            :old    "IJPL-123456 Version mismatch issue"
            :suffix " [B][2025.2,2025.1.X]**\\[Backporting\\]**"}
-          {:new    "IJPL-789012 No backport needed [F][2025.2]**\\[Not-verified\\]**"
+          {:new    "IJPL-789012 No backport needed [F][2025.2]**\\[Testing\\]**"
            :old    "IJPL-789012 No backport needed"
-           :suffix " [F][2025.2]**\\[Not-verified\\]**"}
+           :suffix " [F][2025.2]**\\[Testing\\]**"}
           {:new    "IJPL-345678 Empty collections [T]**\\[Open\\]**"
            :old    "IJPL-345678 Empty collections"
            :suffix " [T]**\\[Open\\]**"})
@@ -16,5 +16,5 @@
            "IJPL-345678")
  :text   "IJPL-188228 JSON. Cannot load the latest OpenAPI Specification schema [B][2025.2,2025.1.X]**\\[Backporting\\]**
 IJPL-123456 Version mismatch issue [B][2025.2,2025.1.X]**\\[Backporting\\]**
-IJPL-789012 No backport needed [F][2025.2]**\\[Not-verified\\]**
+IJPL-789012 No backport needed [F][2025.2]**\\[Testing\\]**
 IJPL-345678 Empty collections [T]**\\[Open\\]**"}

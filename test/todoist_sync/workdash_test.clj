@@ -60,7 +60,8 @@
                       :planned-for ["2025.2" "2025.1"]
                       :included-in ["252.18515"]
                       :available-in ["2025.1"]
-                      :verified "Yes"}]
+                      :verified "Yes"
+                      :qa nil}]
       (is (= "Verified" (:state (wd/enhance-issue-state issue-data))))))
 
   (testing "Fixed state with verified field returns 'Verified'"
@@ -84,8 +85,18 @@
                       :tags []
                       :planned-for ["2025.2"]
                       :included-in ["252.18515"]
-                      :verified nil}]
-      (is (= "Not-verified" (:state (wd/enhance-issue-state issue-data))))))
+                      :verified nil
+                      :qa "Polina"}]
+      (is (= "Testing" (:state (wd/enhance-issue-state issue-data))))))
+
+  (testing "Fixed state without backport or verification returns 'Not-verified'"
+    (let [issue-data {:state "Fixed"
+                      :tags []
+                      :planned-for ["2025.2"]
+                      :included-in ["252.18515"]
+                      :verified nil
+                      :qa "Polina"}]
+      (is (= "Testing" (:state (wd/enhance-issue-state issue-data))))))
 
   (testing "Included can be wider than planned for"
     (let [issue-data {:state "Fixed"
@@ -93,7 +104,7 @@
                       :planned-for ["2025.2"]
                       :included-in ["252.18515" "251.15231"]
                       :verified nil}]
-      (is (= "Not-verified" (:state (wd/enhance-issue-state issue-data))))))
+      (is (= "No QA" (:state (wd/enhance-issue-state issue-data))))))
 
   (testing "dotted versions"
     (let [issue-data {:tags        ["blocking-release"],
@@ -105,24 +116,25 @@
                       :planned-for ["2025.2" "2025.1.3"],
                       :id          "25-6537936",
                       :assignee    "Nicolay Mitropolsky",
+                      :qa "Polina"
                       :idReadable  "IJPL-188228"}]
-      (is (= "Not-verified" (:state (wd/enhance-issue-state issue-data))))))
+      (is (= "Testing" (:state (wd/enhance-issue-state issue-data))))))
 
-  (testing "Fixed state with empty planned-for returns 'Not-verified'"
+  (testing "Fixed state with empty planned-for returns 'No QA'"
     (let [issue-data {:state        "Fixed"
                       :tags         []
                       :planned-for  []
                       :included-in  ["252.18515"]
                       :verified nil}]
-      (is (= "Not-verified" (:state (wd/enhance-issue-state issue-data))))))
+      (is (= "No QA" (:state (wd/enhance-issue-state issue-data))))))
 
-  (testing "Fixed state with 'Requested' in planned-for returns 'Not-verified'"
+  (testing "Fixed state with 'Requested' in planned-for returns 'No QA'"
     (let [issue-data {:state "Fixed"
                       :tags []
                       :planned-for ["Requested"]
                       :included-in ["252.18515"]
                       :verified nil}]
-      (is (= "Not-verified" (:state (wd/enhance-issue-state issue-data))))))
+      (is (= "No QA" (:state (wd/enhance-issue-state issue-data))))))
 
   (testing "Triaged 'Escalated' returns 'Escalated' state"
     (let [issue-data {:state "Open"
@@ -169,4 +181,4 @@
       (is (= "IJPL-123456" (:idReadable enhanced)))
       (is (= "Test issue" (:summary enhanced)))
       (is (= "Test User" (:assignee enhanced)))
-      (is (= "Not-verified" (:state enhanced))))))
+      (is (= "No QA" (:state enhanced))))))
