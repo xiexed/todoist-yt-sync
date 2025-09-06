@@ -55,16 +55,21 @@
               version-part (subs major 2)]
           (str "20" year-part "." version-part))))))
 
+(defn- normalize-pub-version [pf]
+  (->> (str/split pf #"\.") (take 2) (str/join ".")))
+
 (defn backport-necessary? [issue-data]
-  "Detects if backport is necessary based on backport tags or planned-for/included-in mismatch"
-  (let [{:keys [tags planned-for included-in]} issue-data
+  "Detects if backport is necessary based on backport tags or planned-for/included-in/available-in mismatch"
+  (let [{:keys [tags planned-for included-in available-in]} issue-data
         has-backport-tag? (some #(str/starts-with? % "backport-to-") tags)
         planned-for-set (->> planned-for
                              (remove #(= % "Requested"))
-                             (map (fn [pf] (->> (str/split pf #"\.") (take 2) (str/join "."))))
+                             (map normalize-pub-version)
                              (set))
         normalized-included-in (set (keep normalize-version included-in))
-        missing-versions? (not (every? normalized-included-in planned-for-set))]
+        normalized-available-in (set (keep normalize-pub-version available-in))
+        all-available-versions (clojure.set/union normalized-included-in normalized-available-in)
+        missing-versions? (not (every? all-available-versions planned-for-set))]
     (and (not-empty planned-for-set) (or has-backport-tag? missing-versions?))))
 
 ; (map #(wd/load-issue-data my-yt-token %) (mapcat :issues (wd/parse-md-to-sections text)))

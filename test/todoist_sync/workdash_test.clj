@@ -43,7 +43,7 @@
                       :tags []
                       :planned-for ["2025.2"]
                       :available-in ["NEXT 2025.3 EAP 1"]
-                      :verified nil}]
+                      :verified "Yes"}]
       (is (= "Backporting" (:state (wd/enhance-issue-state issue-data))))))
 
   (testing "Fixed state with available in"
@@ -51,8 +51,8 @@
                       :tags []
                       :planned-for ["2025.2"]
                       :available-in ["2025.2"]
-                      :verified nil}]
-      (is (= "Fixed" (:state (wd/enhance-issue-state issue-data))))))
+                      :verified "Yes"}]
+      (is (= "Verified" (:state (wd/enhance-issue-state issue-data))))))
 
   (testing "Fixed mixed include an avaliable in"
     (let [issue-data {:state "Fixed"
@@ -60,8 +60,8 @@
                       :planned-for ["2025.2" "2025.1"]
                       :included-in ["252.18515"]
                       :available-in ["2025.1"]
-                      :verified nil}]
-      (is (= "Fixed" (:state (wd/enhance-issue-state issue-data))))))
+                      :verified "Yes"}]
+      (is (= "Verified" (:state (wd/enhance-issue-state issue-data))))))
 
   (testing "Fixed state with verified field returns 'Verified'"
     (let [issue-data {:state "Fixed"
