@@ -84,6 +84,7 @@
      :tags        (map :name (:tags issue-data))
      :included-in (map :name (custom-field issue-data "Included in builds"))
      :planned-for (map :name (custom-field issue-data "Planned for"))
+     :available-in (map :name (custom-field issue-data "Available in"))
      :verified    (:name (custom-field issue-data "Verified"))
      :triaged     (:name (custom-field issue-data "Triaged"))}))
 
