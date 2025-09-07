@@ -148,7 +148,7 @@
 
 (defn wd-conditional-assignee-renderer [main-assignee]
   (fn [iss] (wd-line-render iss [(when (not= main-assignee (:assignee iss)) :assignee-b)
-                                 (when (not= "Open" (:state iss)) (if (= "No QA" (:state iss)) :state-b :state))])))
+                                 (when (not= "Open" (:state iss)) (if (#{"No QA" "Duplicate" "Incomplete"} (:state iss)) :state-b :state))])))
 
 (defn enhance-issue-state [issue-data]
   (assoc issue-data :state
