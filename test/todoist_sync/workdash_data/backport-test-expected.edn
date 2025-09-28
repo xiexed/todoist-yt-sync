@@ -1,6 +1,6 @@
-{:diffs  ({:new    "IJPL-188228 JSON. Cannot load the latest OpenAPI Specification schema [B][2025.2,2025.1.X][Backporting]"
+{:diffs  ({:new    "IJPL-188228 JSON. Cannot load the latest OpenAPI Specification schema [B][2025.2,2025.1.X][Backporting]**\\[Blocking-Release\\]**"
            :old    "IJPL-188228 Test issue with backport tag"
-           :suffix " [B][2025.2,2025.1.X][Backporting]"}
+           :suffix " [B][2025.2,2025.1.X][Backporting]**\\[Blocking-Release\\]**"}
           {:new    "IJPL-123456 Version mismatch issue [B][2025.2,2025.1.X][Backporting]"
            :old    "IJPL-123456 Version mismatch issue"
            :suffix " [B][2025.2,2025.1.X][Backporting]"}
@@ -18,4 +18,8 @@
            "IJPL-789012"
            "IJPL-789012"
            "IJPL-345678")
- :text   "IJPL-188228 JSON. Cannot load the latest OpenAPI Specification schema [B][2025.2,2025.1.X][Backporting]\nIJPL-123456 Version mismatch issue [B][2025.2,2025.1.X][Backporting]\nIJPL-789012 No backport needed [1][F][2025.2][Testing]\nIJPL-789012 No backport needed [2][F][2025.2][Testing]\nIJPL-345678 Empty collections [T][Open]"}
+ :text   "IJPL-188228 JSON. Cannot load the latest OpenAPI Specification schema [B][2025.2,2025.1.X][Backporting]**\\[Blocking-Release\\]**
+IJPL-123456 Version mismatch issue [B][2025.2,2025.1.X][Backporting]
+IJPL-789012 No backport needed [1][F][2025.2][Testing]
+IJPL-789012 No backport needed [2][F][2025.2][Testing]
+IJPL-345678 Empty collections [T][Open]"}

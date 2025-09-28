@@ -87,6 +87,7 @@
      :state        (:name (custom-field issue-data "State"))
      :type         (:name (custom-field issue-data "Type"))
      :tags         (map :name (:tags issue-data))
+     :priority     (:name (custom-field issue-data "Priority"))
      :included-in  (map :name (custom-field issue-data "Included in builds"))
      :planned-for  (map :name (custom-field issue-data "Planned for"))
      :available-in (map :name (custom-field issue-data "Available in"))
@@ -111,6 +112,11 @@
        (filter some?)
        (apply str)))
 
+(defn capitalize- [text]
+  (->> (str/split text #"\-")
+       (map str/capitalize)
+       (str/join "-")))
+
 (defn render-suffix [issue keys]
   (let [assignee #(or (some-> (:assignee issue) (get-first-letters)) "Unassigned")]
     (not-empty
@@ -129,6 +135,10 @@
                           (str
                             (when (some #{:assignee-b} keys)
                               (str "\\[" (assignee) "\\]"))
+                            (when-let [p (or
+                                           (->> (:tags issue) (filter #{"blocking-release" "blocking-eap"}) (first))
+                                           (->> (:priority issue) (u/take-if (complement #{"Minor" "Normal"}))))]
+                              (str "\\[" (capitalize- p) "\\]"))
                             (when (some #{:state-b} keys)
                               (str "\\[" (:state issue) "\\]"))))]
           (str "**" bold "**"))))))
@@ -148,7 +158,7 @@
 
 (defn wd-conditional-assignee-renderer [main-assignee]
   (fn [iss] (wd-line-render iss [(when (not= main-assignee (:assignee iss)) :assignee-b)
-                                 (when (not= "Open" (:state iss)) (if (#{"No QA" "Duplicate" "Incomplete"} (:state iss)) :state-b :state))])))
+                                 (when (not= "Open" (:state iss)) (if (#{"No QA" "Duplicate" "Incomplete" "In progress"} (:state iss)) :state-b :state))])))
 
 (defn enhance-issue-state [issue-data]
   (assoc issue-data :state
