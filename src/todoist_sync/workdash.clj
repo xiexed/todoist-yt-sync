@@ -1,5 +1,6 @@
 (ns todoist-sync.workdash
   (:require [clojure.string :as str]
+            [todoist-sync.yt-client :as yt]
             [todoist-sync.yt-client :as yt-client :refer [custom-field]]
             [todoist-sync.utils.utils :as u]
             [java-time :as t]
@@ -256,17 +257,26 @@
     ))
 
 (defn update-dashboards-on-server [yt-token]
-  (->> (load-dashboard-articles yt-token)
-       (keep (fn [article]
-               (let [article-data (load-article yt-token (:id article))
-                     content (:content article-data)
-                     patched (patch-outdated yt-token content (wd-conditional-assignee-renderer (:summary article)))]
-                 (when (not-empty (:diffs patched))
-                   (update-article yt-token (:id article) (:text patched))
-                   {:id    (:idReadable article)
-                    :name  (:summary article)
-                    :diffs (:diffs patched)}))))
-       (doall)))
+  (let [all-team-open-issues (map yt/clean-up
+                                  (yt/issues {:key yt-token}
+                                  "#{CnD Team Related} state: Open state: {In Progress} Assignee: -Sergey.Simonchik Type: -{User Story} "
+                                             {:fields "id,idReadable,customFields(id,name,value(name, value, id))"}))]
+   (->> (load-dashboard-articles yt-token)
+        (keep (fn [article]
+                (let [article-data (load-article yt-token (:id article))
+                      content (:content article-data)
+                      patched (patch-outdated yt-token content (wd-conditional-assignee-renderer (:summary article)))
+                      included (into #{} (:issues patched))]
+                  (when (not-empty (:diffs patched))
+                    (update-article yt-token (:id article) (:text patched))
+                    {:id             (:idReadable article)
+                     :name           (:summary article)
+                     :missed (->> all-team-open-issues
+                                          (filter #(= (:assignee %) (:summary article)))
+                                          (map :idReadable)
+                                          (remove included))
+                     :diffs          (:diffs patched)}))))
+        (doall))))
 
 (defn update-metaissue-on-server [yt-token issue-id]
   (let [issue (yt-client/clean-up (yt-client/issue {:key yt-token} issue-id {:fields "idReadable,summary,description,links(direction,linkType(name),issues(idReadable,numberInProject,project(shortName))),customFields(id,name,value(name, value, id))"}))
