@@ -8,7 +8,7 @@ RUN lein deps
 COPY . .
 RUN lein ring uberjar
 
-FROM openjdk:11-jre-slim
+FROM openjdk:11.0.16-jre-slim
 WORKDIR /app
 
 # Add non-root user with explicit numeric ID
