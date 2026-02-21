@@ -14,6 +14,16 @@ Or deploy to production from ansible folder
 
 Or use the `deploy.sh` to keep the compatibility with old Java and Wildfly
 
+## Dashboard update from command line
+
+You can run dashboard update directly from CLI:
+
+    YOUTRACK_TOKEN=<token> lein run update-dashboards-on-server
+
+For Kubernetes scheduled runs, apply:
+
+    kubectl apply -f kubernetes/todoist-sync-dashboard-update-cronjob.yaml
+
 ## Start in dev-mode
 
 `-Dconfig.file=application-dev.conf`
