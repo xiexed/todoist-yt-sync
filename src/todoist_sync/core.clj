@@ -5,6 +5,7 @@
             [todoist-sync.todoist :as tdst]
             [todoist-sync.texts-handler :as thd]
             [todoist-sync.workflow :as workflow]
+            [todoist-sync.workdash :as workdash]
             [ring.util.response :as rur]
             [ring.adapter.jetty :as jetty]
             [ring.middleware.cookies :refer [wrap-cookies]]
@@ -167,8 +168,20 @@
 
 (defn -main
   [& args]
-  ;; Clean up on startup
-  (println "Cleaning up old export files...")
-  (cleanup-old-files 2)
-  
-  (jetty/run-jetty app {:port 3000}))
+  (let [cli-command (first args)
+        dashboard-update-command? (= "update-dashboards-on-server" cli-command)]
+    (if dashboard-update-command?
+      (if-let [yt-token (not-empty (System/getenv "YOUTRACK_TOKEN"))]
+        (do
+          (println "Running dashboard update in CLI mode...")
+          (workdash/update-dashboards-on-server yt-token)
+          (println "Dashboard update finished."))
+        (do
+          (binding [*out* *err*]
+            (println "YOUTRACK_TOKEN is required for CLI dashboard update mode."))
+          (System/exit 1)))
+      (do
+        ;; Clean up on startup
+        (println "Cleaning up old export files...")
+        (cleanup-old-files 2)
+        (jetty/run-jetty app {:port 3000})))))
