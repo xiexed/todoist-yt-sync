@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: todoist-sync-dashboard-update
+  labels:
+    app: todoist-sync
+spec:
+  # Change this value to the required interval.
+  schedule: "*/30 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            app: todoist-sync
+        spec:
+          restartPolicy: Never
+          imagePullSecrets:
+            - name: space-registry
+          containers:
+            - name: dashboard-update
+              image: registry.jetbrains.team/p/td-sync/containers/td-sync:latest
+              imagePullPolicy: Always
+              args:
+                - update-dashboards-on-server
+              env:
+                - name: YOUTRACK_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: todoist-sync-secrets
+                      key: YOUTRACK_TOKEN
