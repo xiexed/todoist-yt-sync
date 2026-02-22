@@ -21,7 +21,8 @@
                  [clojure.java-time "0.3.2"]
                  [seancorfield/next.jdbc "1.1.613"]
                  [honeysql "1.0.461"]
-                 [org.postgresql/postgresql "42.2.18"]]
+                 [org.postgresql/postgresql "42.2.18"]
+                 [hiccup "1.0.5"]]
   :plugins [[lein-ring "0.12.5"]]
   :ring {:handler todoist-sync.core/app}
   :main  todoist-sync.core

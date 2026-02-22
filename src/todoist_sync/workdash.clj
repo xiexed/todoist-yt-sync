@@ -4,7 +4,9 @@
             [todoist-sync.yt-client :as yt-client :refer [custom-field]]
             [todoist-sync.utils.utils :as u]
             [java-time :as t]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [hiccup.core :refer [html]]
+            [hiccup.page :refer [html5]]))
 
 (defn load-dashboard-articles
   ([yt-token article]
@@ -315,74 +317,84 @@
       (.mkdirs dir)
       (spit (clojure.java.io/file dir (str (-> (:timestamp change) (t/instant) (t/local-date-time "GMT0") (t/format)) ".md")) (:added change)))))
 
+(defn linkify-issues
+  "Convert issue IDs in text to HTML links"
+  [text]
+  (when text
+    (let [issue-pattern #"[A-Z]+-\d+"
+          matches (re-seq issue-pattern text)
+          parts (str/split text issue-pattern -1)]
+      (if (empty? matches)
+        text
+        (into [:span]
+              (interleave
+                parts
+                (concat
+                  (map (fn [issue]
+                         [:a.issue-link
+                          {:href (str "https://youtrack.jetbrains.com/issue/" issue)
+                           :target "_blank"}
+                          issue])
+                       matches)
+                  (repeat ""))))))))
+
 (defn format-report-html
   "Convert dashboard update results to HTML report"
   [results]
   (let [timestamp (t/format "yyyy-MM-dd HH:mm:ss" (t/local-date-time))]
-    (str
-      "<!DOCTYPE html>\n"
-      "<html>\n"
-      "<head>\n"
-      "  <meta charset='UTF-8'>\n"
-      "  <title>Dashboard Report - " timestamp "</title>\n"
-      "  <style>\n"
-      "    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }\n"
-      "    h1 { color: #2c3e50; }\n"
-      "    h2 { color: #34495e; margin-top: 20px; border-bottom: 2px solid #3498db; padding-bottom: 5px; }\n"
-      "    .dashboard { background: white; padding: 15px; margin: 15px 0; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }\n"
-      "    .dashboard-title { font-size: 1.2em; font-weight: bold; color: #2980b9; margin-bottom: 10px; }\n"
-      "    .diff { margin: 5px 0; padding: 8px; background-color: #ecf0f1; border-left: 3px solid #3498db; }\n"
-      "    .diff-new { color: #27ae60; }\n"
-      "    .diff-old { color: #e74c3c; text-decoration: line-through; }\n"
-      "    .missed { margin: 10px 0; padding: 10px; background-color: #fff3cd; border-left: 3px solid #ffc107; }\n"
-      "    .missed-title { font-weight: bold; color: #856404; }\n"
-      "    .issue-link { color: #3498db; text-decoration: none; }\n"
-      "    .issue-link:hover { text-decoration: underline; }\n"
-      "    .no-changes { color: #7f8c8d; font-style: italic; padding: 10px; }\n"
-      "    .timestamp { color: #95a5a6; font-size: 0.9em; }\n"
-      "  </style>\n"
-      "</head>\n"
-      "<body>\n"
-      "  <h1>Dashboard Update Report</h1>\n"
-      "  <p class='timestamp'>Generated: " timestamp "</p>\n"
-      (if (empty? results)
-        "  <p class='no-changes'>No changes detected in any dashboard.</p>\n"
-        (apply str
-          (for [result results]
-            (str
-              "  <div class='dashboard'>\n"
-              "    <div class='dashboard-title'>\n"
-              "      <a class='issue-link' href='https://youtrack.jetbrains.com/articles/" (:id result) "' target='_blank'>"
-              (:name result) " (" (:id result) ")</a>\n"
-              "    </div>\n"
-              (if (and (empty? (:diffs result)) (empty? (:missed result)))
-                "    <p class='no-changes'>No changes</p>\n"
-                (str
-                  (when (not-empty (:diffs result))
-                    (str
-                      "    <h3>Changes (" (count (:diffs result)) "):</h3>\n"
-                      (apply str
-                        (for [diff (:diffs result)]
-                          (str
-                            "    <div class='diff'>\n"
-                            (when (:old diff)
-                              (str "      <div class='diff-old'>" (:old diff) "</div>\n"))
-                            (when (:new diff)
-                              (str "      <div class='diff-new'>" (:new diff) "</div>\n"))
-                            "    </div>\n")))))
-                  (when (not-empty (:missed result))
-                    (str
-                      "    <div class='missed'>\n"
-                      "      <div class='missed-title'>Missed issues (" (count (:missed result)) "):</div>\n"
-                      "      <ul>\n"
-                      (apply str
-                        (for [issue (:missed result)]
-                          (str "        <li><a class='issue-link' href='https://youtrack.jetbrains.com/issue/" issue "' target='_blank'>" issue "</a></li>\n")))
-                      "      </ul>\n"
-                      "    </div>\n"))))
-              "  </div>\n"))))
-      "</body>\n"
-      "</html>\n")))
+    (html5
+      [:head
+       [:meta {:charset "UTF-8"}]
+       [:title "Dashboard Report - " timestamp]
+       [:style
+        "body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+         h1 { color: #2c3e50; }
+         h2 { color: #34495e; margin-top: 20px; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
+         .dashboard { background: white; padding: 15px; margin: 15px 0; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+         .dashboard-title { font-size: 1.2em; font-weight: bold; color: #2980b9; margin-bottom: 10px; }
+         .diff { margin: 5px 0; padding: 8px; background-color: #ecf0f1; border-left: 3px solid #3498db; }
+         .diff-new { color: #27ae60; }
+         .diff-old { color: #e74c3c; text-decoration: line-through; }
+         .missed { margin: 10px 0; padding: 10px; background-color: #fff3cd; border-left: 3px solid #ffc107; }
+         .missed-title { font-weight: bold; color: #856404; }
+         .issue-link { color: #3498db; text-decoration: none; }
+         .issue-link:hover { text-decoration: underline; }
+         .no-changes { color: #7f8c8d; font-style: italic; padding: 10px; }
+         .timestamp { color: #95a5a6; font-size: 0.9em; }"]]
+      [:body
+       [:h1 "Dashboard Update Report"]
+       [:p.timestamp "Generated: " timestamp]
+       (if (empty? results)
+         [:p.no-changes "No changes detected in any dashboard."]
+         (for [result results]
+           [:div.dashboard
+            [:div.dashboard-title
+             [:a.issue-link
+              {:href (str "https://youtrack.jetbrains.com/articles/" (:id result))
+               :target "_blank"}
+              (:name result) " (" (:id result) ")"]]
+            (if (and (empty? (:diffs result)) (empty? (:missed result)))
+              [:p.no-changes "No changes"]
+              (list
+                (when (not-empty (:diffs result))
+                  (list
+                    [:h3 "Changes (" (count (:diffs result)) "):"]
+                    (for [diff (:diffs result)]
+                      [:div.diff
+                       (when (:old diff)
+                         [:div.diff-old (linkify-issues (:old diff))])
+                       (when (:new diff)
+                         [:div.diff-new (linkify-issues (:new diff))])])))
+                (when (not-empty (:missed result))
+                  [:div.missed
+                   [:div.missed-title "Missed issues (" (count (:missed result)) "):"]
+                   [:ul
+                    (for [issue (:missed result)]
+                      [:li
+                       [:a.issue-link
+                        {:href (str "https://youtrack.jetbrains.com/issue/" issue)
+                         :target "_blank"}
+                        issue]])]])))]))])))
 
 (defn upload-report-to-article
   "Upload HTML report as attachment to YouTrack article"
