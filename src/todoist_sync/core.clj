@@ -170,7 +170,9 @@
   [& args]
   (let [cli-command (first args)
         dashboard-update-command? (= "update-dashboards-on-server" cli-command)
-        dry-run? (some #{"--dry-run"} args)]
+        dry-run? (some #{"--dry-run"} args)
+        upload-to-youtrack? (some #{"--upload-to-youtrack"} args)
+        report-article-id (System/getenv "REPORT_ARTICLE_ID")]
     (if dashboard-update-command?
       (if-let [yt-token (not-empty (System/getenv "YOUTRACK_TOKEN"))]
         (do
@@ -181,7 +183,19 @@
               (when (not-empty (:diffs result))
                 (println "  Diffs:" (count (:diffs result))))
               (when (not-empty (:missed result))
-                (println "  Missed issues:" (str/join ", " (:missed result))))))
+                (println "  Missed issues:" (str/join ", " (:missed result)))))
+            (when upload-to-youtrack?
+              (if report-article-id
+                (do
+                  (println "\nGenerating HTML report...")
+                  (let [html-report (workdash/format-report-html results)]
+                    (println "Uploading report to YouTrack article" report-article-id "...")
+                    (workdash/upload-report-to-article yt-token report-article-id html-report)
+                    (println "Report uploaded successfully.")))
+                (do
+                  (binding [*out* *err*]
+                    (println "REPORT_ARTICLE_ID environment variable is required when using --upload-to-youtrack"))
+                  (System/exit 1)))))
           (println "\nDashboard update finished."))
         (do
           (binding [*out* *err*]

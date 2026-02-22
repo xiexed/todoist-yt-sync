@@ -150,3 +150,21 @@
 (defn add-issue-link [conf source-issue-id target-issue-id link-type]
   (command conf source-issue-id (str link-type " " target-issue-id)))
 
+(defn upload-attachment
+  "Upload file attachment to YouTrack article or issue.
+  path: API path like 'articles/{articleId}/attachments' or 'issues/{issueId}/attachments'
+  filename: name for the uploaded file
+  content: string content to upload"
+  [conf path filename content]
+  (let [url (mk-url conf path)
+        bytes (.getBytes content "UTF-8")]
+    (-> (client/request
+          {:url          url
+           :method       :post
+           :headers      {"Authorization" (str "Bearer " (conf :key))
+                          "Cache-Control" "no-cache"}
+           :multipart    [{:name filename
+                           :content bytes
+                           :mime-type "text/html"}]})
+        :body)))
+
