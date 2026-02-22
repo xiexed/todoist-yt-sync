@@ -169,13 +169,20 @@
 (defn -main
   [& args]
   (let [cli-command (first args)
-        dashboard-update-command? (= "update-dashboards-on-server" cli-command)]
+        dashboard-update-command? (= "update-dashboards-on-server" cli-command)
+        dry-run? (some #{"--dry-run"} args)]
     (if dashboard-update-command?
       (if-let [yt-token (not-empty (System/getenv "YOUTRACK_TOKEN"))]
         (do
-          (println "Running dashboard update in CLI mode...")
-          (workdash/update-dashboards-on-server yt-token)
-          (println "Dashboard update finished."))
+          (println "Running dashboard update in CLI mode" (if dry-run? "(dry-run)" "") "...")
+          (let [results (workdash/update-dashboards-on-server yt-token dry-run?)]
+            (doseq [result results]
+              (println "\n" (:name result) "(" (:id result) "):")
+              (when (not-empty (:diffs result))
+                (println "  Diffs:" (count (:diffs result))))
+              (when (not-empty (:missed result))
+                (println "  Missed issues:" (str/join ", " (:missed result))))))
+          (println "\nDashboard update finished."))
         (do
           (binding [*out* *err*]
             (println "YOUTRACK_TOKEN is required for CLI dashboard update mode."))
