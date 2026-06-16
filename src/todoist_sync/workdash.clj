@@ -301,13 +301,53 @@
      :diffs                 (:diffs patched)}
     ))
 
+(defn- exception-causes [^Throwable e]
+  (take-while some? (iterate (fn [^Throwable cause] (.getCause cause)) e)))
+
+(defn- request-error-message [^Throwable e]
+  (let [data (some ex-data (exception-causes e))
+        details (u/str-spaced (when-let [status (:status data)] (str "HTTP " status))
+                              (:reason-phrase data)
+                              (:body data))]
+    (or (not-empty details)
+        (some #(not-empty (.getMessage ^Throwable %)) (exception-causes e))
+        (str (class e)))))
+
+(defn- issue-update-error [issue ^Throwable e]
+  (let [issue-id (or (:idReadable issue) (:id issue))]
+    {:id     issue-id
+     :name   (u/str-spaced issue-id (:summary issue))
+     :missed []
+     :diffs  []
+     :errors [{:message (request-error-message e)}]}))
+
+(defn- result-with-details? [result]
+  (or (not-empty (:errors result))
+      (not-empty (concat (:diffs result) (:missed result)))))
+
 (defn update-prioirity-lists-on-server [yt-token]
-  (let [update-result (->> (yt-client/issues {:key yt-token} "tag: {Priority-list}")
-                           (keep (fn [issue] (update-metaissue-on-server yt-token (:id issue)))))]
-    (yt-client/command {:key yt-token} (mapcat :detected-from-patched update-result) "add tag: has-priority-list")
+  (let [update-result (->> (yt-client/issues {:key yt-token}
+                                             "tag: {Priority-list}"
+                                             {:fields "id,idReadable,summary"})
+                           (map (fn [issue]
+                                  (try
+                                    (update-metaissue-on-server yt-token (:id issue))
+                                    (catch Exception e
+                                      (issue-update-error issue e)))))
+                           (doall))
+        detected-from-patched (->> update-result
+                                   (remove :errors)
+                                   (mapcat :detected-from-patched)
+                                   (vec))
+        command-error (try
+                        (yt-client/command {:key yt-token} detected-from-patched "add tag: has-priority-list")
+                        nil
+                        (catch Exception e
+                          (issue-update-error {:id "Priority-list tag command"} e)))]
     (->> update-result
+         (concat (when command-error [command-error]))
          (keep (fn [patched]
-                 (when (not-empty (concat (:diffs patched) (:missed patched)))
+                 (when (result-with-details? patched)
                    patched))))))
 
 

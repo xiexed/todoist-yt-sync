@@ -211,7 +211,7 @@
                         <div v-if="output.data['duplicates']">Issues appears more than once:
                             <span v-for="issue in output.data['duplicates']" :key="issue" v-html="linkifyIssueIds(issue + ' ')"></span>
                         </div>
-                        <div v-if="output.data && Array.isArray(output.data) && output.data.length > 0 && output.data[0].diffs">
+                        <div v-if="isDashboardResult(output.data)">
                             <div v-for="person in output.data" :key="person.id" class="q-mt-md">
                                 <q-card bordered>
                                     <q-card-section class="bg-primary text-white">
@@ -240,6 +240,12 @@
                                                     <div v-else-if="diff.old" class="text-negative" v-html="linkifyIssueIds(diff.old + diff.suffix)"></div>
                                             </li>
                                     </q-card-section>
+                                    <q-card-section v-if="person.errors && person.errors.length > 0" class="bg-red-1 text-negative">
+                                        <div class="text-subtitle1 q-mb-sm">Could not update this issue</div>
+                                        <li v-for="(error, index) in person.errors" :key="index">
+                                            <span v-html="linkifyIssueIds(error.message)"></span>
+                                        </li>
+                                    </q-card-section>
                                     <q-card-section v-if="person.missed && person.missed.length > 0">
                                         <q-expansion-item expand-separator
                                                          :label="'Missed (' + person.missed.length + '):'"
@@ -256,7 +262,7 @@
                                             </div>
                                         </q-expansion-item>
                                     </q-card-section>
-                                    <q-card-section v-if="!person.diffs || person.diffs.length === 0 && (!person.missed || person.missed.length === 0)" class="text-center text-grey">
+                                    <q-card-section v-if="!hasResultDetails(person)" class="text-center text-grey">
                                         No changes
                                     </q-card-section>
                                 </q-card>
@@ -385,6 +391,20 @@
                 if (!text) return text;
                 const issuePattern = /\b([A-Z]{2,10}-\d+)\b/g;
                 return text.replace(issuePattern, '<a target="_blank" rel="noopener noreferrer" href="https://youtrack.jetbrains.com/issue/$1">$1</a>');
+            },
+
+            hasResultDetails(result) {
+                return Boolean(
+                    (result.diffs && result.diffs.length > 0) ||
+                    (result.missed && result.missed.length > 0) ||
+                    (result.errors && result.errors.length > 0)
+                );
+            },
+
+            isDashboardResult(data) {
+                return Array.isArray(data) && data.length > 0 && data.some((item) => (
+                    item.diffs || item.missed || item.errors
+                ));
             },
             
             // Start polling for operation status

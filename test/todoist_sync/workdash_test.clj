@@ -1,7 +1,8 @@
 (ns todoist-sync.workdash-test
   (:require [clojure.test :refer :all]
             [todoist-sync.utils.utils :as u]
-            [todoist-sync.workdash :as wd]))
+            [todoist-sync.workdash :as wd]
+            [todoist-sync.yt-client :as yt-client]))
 
 (defn use-dumped-load-issue-data [filename]
   (let [store (u/load-edn filename)]
@@ -182,3 +183,40 @@
       (is (= "Test issue" (:summary enhanced)))
       (is (= "Test User" (:assignee enhanced)))
       (is (= "No QA" (:state enhanced))))))
+
+(deftest test-update-priority-lists-keeps-going-on-issue-error
+  (testing "A failed metaissue update is shown in the result and does not stop the rest"
+    (let [commands (atom [])]
+      (with-redefs [yt-client/issues (fn [_ query params]
+                                       (is (= "tag: {Priority-list}" query))
+                                       (is (= {:fields "id,idReadable,summary"} params))
+                                       [{:id "1-1" :idReadable "IJPL-1" :summary "Forbidden issue"}
+                                        {:id "1-2" :idReadable "IJPL-2" :summary "Updated issue"}])
+                    wd/update-metaissue-on-server (fn [_ issue-id]
+                                                    (if (= "1-1" issue-id)
+                                                      (throw (ex-info "clj-http: status 403"
+                                                                      {:status 403
+                                                                       :reason-phrase "Forbidden"
+                                                                       :body "{\"error\":\"Forbidden\"}"}))
+                                                      {:id "IJPL-2"
+                                                       :name "IJPL-2 Updated issue"
+                                                       :missed []
+                                                       :detected-from-patched #{"IJPL-3"}
+                                                       :diffs [{:new "IJPL-3 Updated"}]}))
+                    yt-client/command (fn [_ issue-ids command]
+                                        (swap! commands conj {:issue-ids (vec issue-ids)
+                                                              :command command}))]
+        (is (= [{:id "IJPL-1"
+                 :name "IJPL-1 Forbidden issue"
+                 :missed []
+                 :diffs []
+                 :errors [{:message "HTTP 403 Forbidden {\"error\":\"Forbidden\"}"}]}
+                {:id "IJPL-2"
+                 :name "IJPL-2 Updated issue"
+                 :missed []
+                 :detected-from-patched #{"IJPL-3"}
+                 :diffs [{:new "IJPL-3 Updated"}]}]
+               (wd/update-prioirity-lists-on-server "token")))
+        (is (= [{:issue-ids ["IJPL-3"]
+                 :command "add tag: has-priority-list"}]
+               @commands))))))
