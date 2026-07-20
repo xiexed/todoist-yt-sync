@@ -137,6 +137,15 @@
                       :verified nil}]
       (is (= "No QA" (:state (wd/enhance-issue-state issue-data))))))
 
+  (testing "Nil version values are ignored"
+    (let [issue-data {:state "Fixed"
+                      :tags []
+                      :planned-for [nil "2025.2"]
+                      :included-in [nil "252.18515"]
+                      :available-in [nil]
+                      :verified "Yes"}]
+      (is (= "Verified" (:state (wd/enhance-issue-state issue-data))))))
+
   (testing "Triaged 'Escalated' returns 'Escalated' state"
     (let [issue-data {:state "Open"
                       :tags []

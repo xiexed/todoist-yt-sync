@@ -59,7 +59,8 @@
           (str "20" year-part "." version-part))))))
 
 (defn- normalize-pub-version [pf]
-  (->> (str/split pf #"\.") (take 2) (str/join ".")))
+  (when pf
+    (->> (str/split pf #"\.") (take 2) (str/join "."))))
 
 (defn backport-necessary? [issue-data]
   "Detects if backport is necessary based on backport tags or planned-for/included-in/available-in mismatch"
@@ -67,7 +68,7 @@
         has-backport-tag? (some #(str/starts-with? % "backport-to-") tags)
         planned-for-set (->> planned-for
                              (remove #(= % "Requested"))
-                             (map normalize-pub-version)
+                             (keep normalize-pub-version)
                              (set))
         normalized-included-in (set (keep normalize-version included-in))
         normalized-available-in (set (keep normalize-pub-version available-in))
