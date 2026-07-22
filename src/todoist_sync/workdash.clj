@@ -160,9 +160,15 @@
       {:suffix suffix
        :body   body})))
 
+(def emphasized-dashboard-states
+  #{"Backporting" "Duplicate" "Fixed in Branch" "Incomplete" "In progress" "No QA" "Obsolete"})
+
 (defn wd-conditional-assignee-renderer [main-assignee]
   (fn [iss] (wd-line-render iss [(when (not= main-assignee (:assignee iss)) :assignee-b)
-                                 (when (not= "Open" (:state iss)) (if (#{"No QA" "Duplicate" "Incomplete" "In progress"} (:state iss)) :state-b :state))])))
+                                 (when (not= "Open" (:state iss))
+                                   (if (contains? emphasized-dashboard-states (:state iss))
+                                     :state-b
+                                     :state))])))
 
 (defn enhance-issue-state [issue-data]
   (assoc issue-data :state

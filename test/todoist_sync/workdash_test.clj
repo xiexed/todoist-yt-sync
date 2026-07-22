@@ -22,6 +22,13 @@
       (is (= (u/load-edn "test/todoist_sync/workdash_data/backport-test-expected.edn")
              (wd/patch-outdated "no-token" (slurp "test/todoist_sync/workdash_data/backport-test.md") [:state]))))))
 
+(deftest test-dashboard-emphasized-states
+  (let [renderer (wd/wd-conditional-assignee-renderer "Dashboard Owner")]
+    (doseq [state ["Backporting" "Duplicate" "Fixed in Branch" "Incomplete" "In progress" "No QA" "Obsolete"]]
+      (testing state
+        (is (= (str " **\\[" state "\\]**")
+               (:suffix (renderer {:state state :assignee "Dashboard Owner"}))))))))
+
 (deftest test-enhance-issue-state
   (testing "Fixed state with backport necessary returns 'Backporting'"
     (let [issue-data {:state "Fixed"
