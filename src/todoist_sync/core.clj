@@ -14,6 +14,7 @@
             [ring.middleware.session :refer [wrap-session]]
             [ring.middleware.json :refer [wrap-json-response wrap-json-body]]
             [ring.middleware.session.memory :as ses-mem]
+            [todoist-sync.middleware.server-errors :refer [wrap-server-errors]]
             [promesa.core :as p]
             [clojure.data.json :as dj]
             [clojure.string :as str])
@@ -153,7 +154,8 @@
               (wrap-session {:store        (ses-mem/memory-store session-atom)
                              :cookie-attrs {:max-age (* 60 60 24 30)}})
               (wrap-cookies)
-              (wrap-params))))
+              (wrap-params)
+              (wrap-server-errors))))
 
 ;; Schedule a task to clean up old files every 6 hours
 (defonce cleanup-scheduler
