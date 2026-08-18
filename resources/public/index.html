@@ -49,6 +49,7 @@
                     </q-toolbar>
                     <div class="q-pa-md">
                         <div v-if="output.data.text" v-html="linkifyIssueIds(output.data.text)"></div>
+                        <div v-if="output.data['plain-text']">{{ output.data['plain-text'] }}</div>
                         <div v-if="output.data.html" v-html="output.data.html"></div>
                         <div v-if="output.data['text-out']">
                             <pre @click.native="$event.target.select()" v-html="linkifyIssueIds(output.data['text-out'])"></pre>
@@ -369,14 +370,58 @@
         },
         async created() {
             console.log("created");
-            let f = await fetch("/json/state");
-            let d = await f.json();
-            console.log("d = ", d);
-            this.state = d;
-            let lastSelectedValue = this.$q.cookies.get('taskSelected');
-            this.taskSelected = this.state["task-options"].find((t) => t.value === lastSelectedValue)
+            try {
+                const response = await fetch("/json/state");
+                const state = await this.readApiResponse(response);
+                console.log("d = ", state);
+                this.state = state;
+                const lastSelectedValue = this.$q.cookies.get('taskSelected');
+                this.taskSelected = this.state["task-options"].find((t) => t.value === lastSelectedValue);
+            } catch (error) {
+                this.showError(error);
+            }
         },
         methods: {
+            async readApiResponse(response) {
+                const body = await response.text();
+                let data = null;
+
+                if (body) {
+                    try {
+                        data = JSON.parse(body);
+                    } catch (error) {
+                        if (response.ok) {
+                            throw new Error("The server returned an unexpected response. Please try again.");
+                        }
+                    }
+                }
+
+                if (!response.ok) {
+                    const messages = {
+                        502: "The service is temporarily unavailable. Please try again in a moment.",
+                        503: "The service is temporarily unavailable. Please try again in a moment.",
+                        504: "The request took too long to complete. Please try again. If it keeps happening, contact support."
+                    };
+                    const serverMessage = data && (data.message || data.error);
+                    throw new Error(messages[response.status] || serverMessage ||
+                        `The request failed (HTTP ${response.status}). Please try again.`);
+                }
+
+                if (data === null) {
+                    throw new Error("The server returned an empty response. Please try again.");
+                }
+
+                return data;
+            },
+
+            showError(error) {
+                console.error(error);
+                this.outputs.unshift({
+                    title: "Request failed",
+                    data: {"plain-text": error.message || "Something went wrong. Please try again."}
+                });
+            },
+
             outputClose(output) {
                 // Clear any polling interval associated with this output
                 if (output.data && output.data['operation-id'] && this.pollingIntervals[output.data['operation-id']]) {
@@ -418,7 +463,7 @@
                 const pollInterval = setInterval(async () => {
                     try {
                         const response = await fetch(`/json/operation-status/${operationId}`);
-                        const status = await response.json();
+                        const status = await this.readApiResponse(response);
                         
                         // Update the status in the output
                         this.$set(output, 'operationStatus', status);
@@ -447,10 +492,10 @@
                             'Content-Type': 'application/json'
                         }
                     });
-                    const result = await response.json();
+                    const result = await this.readApiResponse(response);
                     console.log('Cancel operation result:', result);
                 } catch (err) {
-                    console.error('Error cancelling operation:', err);
+                    this.showError(err);
                 }
             },
             
@@ -473,7 +518,7 @@
                         task: this.taskSelected
                     })
                 }).then(async (res) => {
-                    let d = await res.json();
+                    let d = await this.readApiResponse(res);
                     console.log("post d = ", d);
                     this.$delete(this.tasks, this.tasks.indexOf(task));
                     
@@ -488,11 +533,8 @@
                         this.startPollingStatus(d['operation-id'], items);
                     }
                 }).catch(async (e) => {
-                    console.log("err  = ", e);
                     this.$delete(this.tasks, this.tasks.indexOf(task))
-                    let items = {title: "Error", data: {text: e.message}};
-                    console.log("post items = ", JSON.stringify(items) );
-                    this.outputs.unshift(items)
+                    this.showError(e);
                 })
                 this.text = '';
             }
