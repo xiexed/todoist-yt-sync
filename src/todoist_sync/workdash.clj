@@ -161,7 +161,8 @@
        :body   body})))
 
 (def emphasized-dashboard-states
-  #{"Backporting" "Duplicate" "Fixed in Branch" "Incomplete" "In progress" "No QA" "Obsolete"})
+  #{"Answered" "Backporting" "Duplicate" "Fixed in Branch" "Incomplete" "In progress" "No QA" "Obsolete"
+    "Works As Intended"})
 
 (defn wd-conditional-assignee-renderer [main-assignee]
   (fn [iss] (wd-line-render iss [(when (not= main-assignee (:assignee iss)) :assignee-b)
