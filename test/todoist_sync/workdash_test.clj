@@ -30,6 +30,49 @@
         (is (= (str " **\\[" state "\\]**")
                (:suffix (renderer {:state state :assignee "Dashboard Owner"}))))))))
 
+(deftest test-stale-state-label
+  (is (nil? (wd/stale-state-label nil)))
+  (is (nil? (wd/stale-state-label 20)))
+  (is (= ">20d" (wd/stale-state-label 21)))
+  (is (= ">20d" (wd/stale-state-label 30)))
+  (is (= ">30d" (wd/stale-state-label 31)))
+  (is (= ">40d" (wd/stale-state-label 45))))
+
+(deftest test-dashboard-stale-state-age
+  (let [renderer (wd/wd-conditional-assignee-renderer "Dashboard Owner")
+        suffix #(:suffix (renderer (merge {:assignee "Dashboard Owner"} %)))]
+    (testing "Age is not shown for 20 days and less"
+      (is (= " **\\[In progress\\]**" (suffix {:state "In progress" :state-days 20}))))
+    (testing "Age is shown in bold rounded down to tens"
+      (is (= " **\\[In progress\\]\\[>30d\\]**" (suffix {:state "In progress" :state-days 37})))
+      (is (= " [Testing]**\\[>20d\\]**" (suffix {:state "Testing" :state-days 25}))))))
+
+(deftest test-patch-outdated-state-age
+  (let [day (* 24 60 60 1000)
+        now (System/currentTimeMillis)
+        issues {"IJPL-1" {:idReadable "IJPL-1" :id "1-1" :summary "Long in progress" :state "In Progress"
+                          :assignee "Dashboard Owner"}
+                "IJPL-2" {:idReadable "IJPL-2" :id "1-2" :summary "Long in testing" :state "Fixed" :qa "QA"
+                          :verified nil :planned-for [] :assignee "Dashboard Owner" :resolved (- now (* 45 day))}
+                "IJPL-3" {:idReadable "IJPL-3" :id "1-3" :summary "Long open" :state "Open"
+                          :assignee "Dashboard Owner"}}
+        requested (atom [])]
+    (with-redefs [wd/load-issue-data (fn [_ issue] (issues issue))
+                  yt-client/get-all-from-yt-lazy
+                  (fn [_ path _ _]
+                    (swap! requested conj path)
+                    (case path
+                      "issues/1-1/activities" [{:field {:name "State"} :added [{:name "In Progress"}] :timestamp (- now (* 60 day))}
+                                               {:field {:name "State"} :added [{:name "Open"}] :timestamp (- now (* 50 day))}
+                                               {:field {:name "Assignee"} :added [{:name "In Progress"}] :timestamp (- now day)}
+                                               {:field {:name "State"} :added [{:name "In Progress"}] :timestamp (- now (* 22 day))}]
+                      []))]
+      (is (= "IJPL-1 Long in progress [In Progress]**\\[>20d\\]**\nIJPL-2 Long in testing [Testing]**\\[>40d\\]**\nIJPL-3 Long open"
+             (:text (wd/patch-outdated "token" "IJPL-1\nIJPL-2\nIJPL-3"
+                                       (wd/wd-conditional-assignee-renderer "Dashboard Owner")
+                                       {:state-age? true}))))
+      (is (= ["issues/1-1/activities" "issues/1-2/activities"] @requested)))))
+
 (deftest test-enhance-issue-state
   (testing "Fixed state with backport necessary returns 'Backporting'"
     (let [issue-data {:state "Fixed"

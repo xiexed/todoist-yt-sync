@@ -99,6 +99,45 @@
      :verified     (:name (custom-field issue-data "Verified"))
      :triaged      (:name (custom-field issue-data "Triaged"))}))
 
+(def stale-dashboard-states
+  "Intermediate states in which an issue is not expected to stay for long"
+  #{"in progress" "fixed in branch" "testing" "backporting"})
+
+(def stale-state-min-days 20)
+
+(defn stale-state? [state]
+  (contains? stale-dashboard-states (some-> state str/lower-case)))
+
+(defn- activity-values [value]
+  (if (sequential? value) value [value]))
+
+(defn load-state-since
+  "Timestamp (ms) of the last change of the issue State field to `state`"
+  [yt-token issue-id state]
+  (->> (yt-client/get-all-from-yt-lazy {:key yt-token}
+                                       (str "issues/" issue-id "/activities")
+                                       {:categories "CustomFieldCategory"
+                                        :fields     "field(name),added(name),timestamp"}
+                                       {})
+       (filter #(= "State" (get-in % [:field :name])))
+       (filter #(some (fn [v] (= state (:name v))) (activity-values (:added %))))
+       (keep :timestamp)
+       (sort)
+       (last)))
+
+(defn state-days
+  "Whole days the issue stays in its current (raw YouTrack) state"
+  [yt-token issue-data now-ms]
+  (when-let [since (or (load-state-since yt-token (:id issue-data) (:state issue-data))
+                       (when (= "Fixed" (:state issue-data)) (:resolved issue-data)))]
+    (quot (- now-ms since) (* 24 60 60 1000))))
+
+(defn stale-state-label
+  "Rounds days down to tens, e.g. 21..30 -> \">20d\", 31..40 -> \">30d\"; nil for 20 days and less"
+  [days]
+  (when (and days (> days stale-state-min-days))
+    (str ">" (* 10 (quot (dec days) 10)) "d")))
+
 (defmacro record-issue-data-loads [filename & body]
   `(let [old# load-issue-data
          store# (atom {})
@@ -144,7 +183,9 @@
                                            (->> (:priority issue) (u/take-if (complement #{"Minor" "Normal"}))))]
                               (str "\\[" (capitalize- p) "\\]"))
                             (when (some #{:state-b} keys)
-                              (str "\\[" (:state issue) "\\]"))))]
+                              (str "\\[" (:state issue) "\\]"))
+                            (when (some #{:state-age} keys)
+                              (some->> (:state-days issue) (stale-state-label) (format "\\[%s\\]")))))]
           (str "**" bold "**"))))))
 
 (defn render [issue keys]
@@ -169,7 +210,8 @@
                                  (when (not= "Open" (:state iss))
                                    (if (contains? emphasized-dashboard-states (:state iss))
                                      :state-b
-                                     :state))])))
+                                     :state))
+                                 :state-age])))
 
 (defn enhance-issue-state [issue-data]
   (assoc issue-data :state
@@ -187,8 +229,20 @@
                         (= (:triaged issue-data) "Escalated") "Escalated"
                         :else recorded-state))))
 
-(defn patch-outdated [yt-token src renderer]
-  (let [lines (str/split-lines (or src ""))
+(defn- add-state-days
+  "Adds :state-days to the enhanced issue when it is in an intermediate state.
+  Testing and Backporting are derived from Fixed, so their age is counted from the raw State change."
+  [yt-token now-ms raw-issue issue]
+  (if (stale-state? (:state issue))
+    (assoc issue :state-days (state-days yt-token raw-issue now-ms))
+    issue))
+
+(defn patch-outdated
+  ([yt-token src renderer]
+   (patch-outdated yt-token src renderer {}))
+  ([yt-token src renderer {:keys [state-age?]}]
+  (let [now-ms (System/currentTimeMillis)
+        lines (str/split-lines (or src ""))
         render-fn (cond
                     (fn? renderer) renderer
                     (vector? renderer) (fn [is] (render is renderer)))
@@ -206,7 +260,9 @@
                                (let [parsed (parse-md-line line)]
                                  (if (= :issue (:type parsed))
                                    (let [issue-id (:value parsed)
-                                         issue (enhance-issue-state (load-issue-data yt-token issue-id))
+                                         raw-issue (load-issue-data yt-token issue-id)
+                                         issue (cond->> (enhance-issue-state raw-issue)
+                                                 state-age? (add-state-days yt-token now-ms raw-issue))
                                          ; Add numbering for duplicates
                                          issue-with-number (if (duplicate-issues issue-id)
                                                              (let [current-count (swap! issue-counters update issue-id (fnil inc 0))]
@@ -229,7 +285,7 @@
                   (keep :line)
                   (str/join "\n"))
      :issues (keep :issue processed-lines)
-     :diffs  diffs}))
+     :diffs  diffs})))
 
 (defn patch-outdated-plan [yt-token src]
   (patch-outdated yt-token src
@@ -258,7 +314,7 @@
     (let [article (load-article yt-token (:id article))
           assignee (:summary article)
           content (:content article)
-          patched (patch-outdated yt-token content (wd-conditional-assignee-renderer (:summary article)))]
+          patched (patch-outdated yt-token content (wd-conditional-assignee-renderer (:summary article)) {:state-age? true})]
       (when (not-empty (:diffs patched))
         (let [dir (clojure.java.io/file dir)]
           (.mkdirs dir)
@@ -277,7 +333,7 @@
           (keep (fn [article]
                   (let [article-data (load-article yt-token (:id article))
                         content (:content article-data)
-                        patched (patch-outdated yt-token content (wd-conditional-assignee-renderer (:summary article)))
+                        patched (patch-outdated yt-token content (wd-conditional-assignee-renderer (:summary article)) {:state-age? true})
                         included (into #{} (:issues patched))
                         missed (->> all-team-open-issues
                                     (filter #(= (:assignee %) (:summary article)))
