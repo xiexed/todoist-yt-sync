@@ -24,7 +24,8 @@
 
 (deftest test-dashboard-emphasized-states
   (let [renderer (wd/wd-conditional-assignee-renderer "Dashboard Owner")]
-    (doseq [state ["Backporting" "Duplicate" "Fixed in Branch" "Incomplete" "In progress" "No QA" "Obsolete"]]
+    (doseq [state ["Answered" "Backporting" "Duplicate" "Fixed in Branch" "Incomplete" "In progress" "No QA" "Obsolete"
+                   "Works As Intended"]]
       (testing state
         (is (= (str " **\\[" state "\\]**")
                (:suffix (renderer {:state state :assignee "Dashboard Owner"}))))))))
