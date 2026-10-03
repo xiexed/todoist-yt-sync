@@ -81,11 +81,12 @@
   ;(map (fn [issue] (filter (fn [e] (#{"Assignee" "Planned for"} (:name e))) (yt-client/get-from-yt {:key yt-token} (str "issues/" issue "/customFields") {:fields "id,name,value(name, value, id)"}))))
   (let [issue-data (->> (yt-client/get-from-yt {:key yt-token}
                                                (str "issues/" issue)
-                                               {:fields "id,idReadable,summary,resolved,customFields(id,name,value(name, value, id)),tags(name)"})
+                                               {:fields "id,idReadable,summary,created,resolved,customFields(id,name,value(name, value, id)),tags(name)"})
                         (u/enhance-error (str "issue:" issue)))]
     {:idReadable   (:idReadable issue-data)
      :summary      (:summary issue-data)
      :id           (:id issue-data)
+     :created      (:created issue-data)
      :resolved     (:resolved issue-data)
      :assignee     (:name (custom-field issue-data "Assignee"))
      :state        (:name (custom-field issue-data "State"))
@@ -99,6 +100,8 @@
      :verified     (:name (custom-field issue-data "Verified"))
      :triaged      (:name (custom-field issue-data "Triaged"))}))
 
+(declare enhance-issue-state)
+
 (def stale-dashboard-states
   "Intermediate states in which an issue is not expected to stay for long"
   #{"in progress" "fixed in branch" "testing" "backporting"})
@@ -108,28 +111,68 @@
 (defn stale-state? [state]
   (contains? stale-dashboard-states (some-> state str/lower-case)))
 
-(defn- activity-values [value]
-  (if (sequential? value) value [value]))
+(def state-history-fields
+  "Issue fields, which `enhance-issue-state` depends on, by their YouTrack names"
+  {"State"              :state
+   "Verified"           :verified
+   "QA"                 :qa
+   "Triaged"            :triaged
+   "Planned for"        :planned-for
+   "Included in builds" :included-in
+   "Available in"       :available-in})
 
-(defn load-state-since
-  "Timestamp (ms) of the last change of the issue State field to `state`"
-  [yt-token issue-id state]
-  (->> (yt-client/get-all-from-yt-lazy {:key yt-token}
-                                       (str "issues/" issue-id "/activities")
-                                       {:categories "CustomFieldCategory"
-                                        :fields     "field(name),added(name),timestamp"}
-                                       {})
-       (filter #(= "State" (get-in % [:field :name])))
-       (filter #(some (fn [v] (= state (:name v))) (activity-values (:added %))))
-       (keep :timestamp)
-       (sort)
-       (last)))
+(def multi-value-fields #{:planned-for :included-in :available-in :tags})
+
+(defn load-state-history
+  "Activities of the fields and tags which affect the dashboard state"
+  [yt-token issue-id]
+  (yt-client/get-all-from-yt-lazy {:key yt-token}
+                                  (str "issues/" issue-id "/activities")
+                                  {:categories "CustomFieldCategory,TagsCategory"
+                                   :fields     "category(id),field(name),added(name),removed(name),timestamp"}
+                                  {}))
+
+(defn- activity-names [value]
+  (keep :name (if (sequential? value) value (when value [value]))))
+
+(defn- activity-key [activity]
+  (if (= "TagsCategory" (get-in activity [:category :id]))
+    :tags
+    (state-history-fields (get-in activity [:field :name]))))
+
+(defn- undo-activity
+  "Returns the issue data as it was before the activity"
+  [issue-data activity]
+  (if-let [k (activity-key activity)]
+    (let [added (set (activity-names (:added activity)))
+          removed (activity-names (:removed activity))]
+      (if (multi-value-fields k)
+        (update issue-data k #(concat (remove added %) removed))
+        (assoc issue-data k (first removed))))
+    issue-data))
+
+(defn state-since
+  "Timestamp (ms) since which the issue has its current dashboard state (as computed by `enhance-issue-state`).
+  Replays the field history backwards; changes made at the same moment are undone together."
+  [issue-data activities]
+  (let [state-of #(:state (enhance-issue-state %))
+        current (state-of issue-data)]
+    (loop [issue-data issue-data
+           groups (->> activities
+                       (filter activity-key)
+                       (group-by :timestamp)
+                       (sort-by key >))]
+      (if-let [[timestamp group] (first groups)]
+        (let [before (reduce undo-activity issue-data (reverse group))]
+          (if (= current (state-of before))
+            (recur before (rest groups))
+            timestamp))
+        (:created issue-data)))))
 
 (defn state-days
-  "Whole days the issue stays in its current (raw YouTrack) state"
+  "Whole days the issue stays in its current dashboard state"
   [yt-token issue-data now-ms]
-  (when-let [since (or (load-state-since yt-token (:id issue-data) (:state issue-data))
-                       (when (= "Fixed" (:state issue-data)) (:resolved issue-data)))]
+  (when-let [since (state-since issue-data (load-state-history yt-token (:id issue-data)))]
     (quot (- now-ms since) (* 24 60 60 1000))))
 
 (defn stale-state-label
@@ -230,8 +273,7 @@
                         :else recorded-state))))
 
 (defn- add-state-days
-  "Adds :state-days to the enhanced issue when it is in an intermediate state.
-  Testing and Backporting are derived from Fixed, so their age is counted from the raw State change."
+  "Adds :state-days to the enhanced issue when it is in an intermediate state"
   [yt-token now-ms raw-issue issue]
   (if (stale-state? (:state issue))
     (assoc issue :state-days (state-days yt-token raw-issue now-ms))
