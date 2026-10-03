@@ -30,6 +30,86 @@
         (is (= (str " **\\[" state "\\]**")
                (:suffix (renderer {:state state :assignee "Dashboard Owner"}))))))))
 
+(deftest test-stale-state-label
+  (is (nil? (wd/stale-state-label nil)))
+  (is (nil? (wd/stale-state-label 20)))
+  (is (= ">20d" (wd/stale-state-label 21)))
+  (is (= ">20d" (wd/stale-state-label 30)))
+  (is (= ">30d" (wd/stale-state-label 31)))
+  (is (= ">40d" (wd/stale-state-label 45))))
+
+(deftest test-dashboard-stale-state-age
+  (let [renderer (wd/wd-conditional-assignee-renderer "Dashboard Owner")
+        suffix #(:suffix (renderer (merge {:assignee "Dashboard Owner"} %)))]
+    (testing "Age is not shown for 20 days and less"
+      (is (= " **\\[In progress\\]**" (suffix {:state "In progress" :state-days 20}))))
+    (testing "Age is shown in bold rounded down to tens"
+      (is (= " **\\[In progress\\]\\[>30d\\]**" (suffix {:state "In progress" :state-days 37})))
+      (is (= " [Testing]**\\[>20d\\]**" (suffix {:state "Testing" :state-days 25}))))))
+
+(defn- state-activity [field timestamp added & [removed]]
+  {:category  {:id "CustomFieldCategory"}
+   :field     {:name field}
+   :timestamp timestamp
+   :added     (map (fn [n] {:name n}) added)
+   :removed   (map (fn [n] {:name n}) removed)})
+
+(defn- tag-activity [timestamp added]
+  {:category {:id "TagsCategory"} :field {:name "tag"} :timestamp timestamp :added [{:name added}] :removed []})
+
+(deftest test-state-since
+  (let [fixed {:state "Fixed" :qa "QA" :planned-for ["2025.2"] :included-in ["252.1"] :tags [] :created 1}]
+    (testing "Raw state is counted from the last change to it"
+      (is (= 300 (wd/state-since {:state "In Progress" :created 1}
+                                 [(state-activity "State" 100 ["In Progress"] ["Open"])
+                                  (state-activity "State" 200 ["Open"] ["In Progress"])
+                                  (state-activity "Assignee" 250 ["Someone"])
+                                  (state-activity "State" 300 ["In Progress"] ["Open"])]))))
+    (testing "Issue created in its state is counted from creation"
+      (is (= 1 (wd/state-since {:state "In Progress" :created 1} []))))
+    (testing "Testing starts when QA is assigned after Fixed"
+      (is (= 200 (wd/state-since fixed [(state-activity "State" 100 ["Fixed"] ["Open"])
+                                        (state-activity "QA" 200 ["QA"])]))))
+    (testing "Backporting starts when backport becomes necessary, not when issue is fixed"
+      (is (= 300 (wd/state-since (assoc fixed :tags ["backport-to-251"])
+                                 [(state-activity "State" 100 ["Fixed"] ["Open"])
+                                  (state-activity "QA" 200 ["QA"])
+                                  (tag-activity 300 "backport-to-251")]))))
+    (testing "Testing restarts when Verified is reset"
+      (is (= 400 (wd/state-since fixed [(state-activity "State" 100 ["Fixed"] ["Open"])
+                                        (state-activity "Verified" 300 ["Yes"])
+                                        (state-activity "Verified" 400 [] ["Yes"])]))))
+    (testing "Changes made at the same moment are undone together"
+      (is (= 100 (wd/state-since fixed [(state-activity "State" 100 ["Fixed"] ["Open"])
+                                        (state-activity "QA" 100 ["QA"])
+                                        (state-activity "Verified" 200 ["Yes"])
+                                        (state-activity "Verified" 200 [] ["Yes"])]))))))
+
+(deftest test-patch-outdated-state-age
+  (let [day (* 24 60 60 1000)
+        now (System/currentTimeMillis)
+        issues {"IJPL-1" {:idReadable "IJPL-1" :id "1-1" :summary "Long in progress" :state "In Progress"
+                          :assignee "Dashboard Owner" :created (- now (* 90 day))}
+                "IJPL-2" {:idReadable "IJPL-2" :id "1-2" :summary "Long in testing" :state "Fixed" :qa "QA"
+                          :verified nil :planned-for [] :assignee "Dashboard Owner" :created (- now (* 45 day))}
+                "IJPL-3" {:idReadable "IJPL-3" :id "1-3" :summary "Long open" :state "Open"
+                          :assignee "Dashboard Owner" :created (- now (* 90 day))}}
+        requested (atom [])]
+    (with-redefs [wd/load-issue-data (fn [_ issue] (issues issue))
+                  yt-client/get-all-from-yt-lazy
+                  (fn [_ path _ _]
+                    (swap! requested conj path)
+                    (case path
+                      "issues/1-1/activities" [(state-activity "State" (- now (* 60 day)) ["In Progress"] ["Open"])
+                                               (state-activity "State" (- now (* 50 day)) ["Open"] ["In Progress"])
+                                               (state-activity "State" (- now (* 22 day)) ["In Progress"] ["Open"])]
+                      []))]
+      (is (= "IJPL-1 Long in progress [In Progress]**\\[>20d\\]**\nIJPL-2 Long in testing [Testing]**\\[>40d\\]**\nIJPL-3 Long open"
+             (:text (wd/patch-outdated "token" "IJPL-1\nIJPL-2\nIJPL-3"
+                                       (wd/wd-conditional-assignee-renderer "Dashboard Owner")
+                                       {:state-age? true}))))
+      (is (= ["issues/1-1/activities" "issues/1-2/activities"] @requested)))))
+
 (deftest test-enhance-issue-state
   (testing "Fixed state with backport necessary returns 'Backporting'"
     (let [issue-data {:state "Fixed"

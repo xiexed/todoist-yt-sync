@@ -81,11 +81,12 @@
   ;(map (fn [issue] (filter (fn [e] (#{"Assignee" "Planned for"} (:name e))) (yt-client/get-from-yt {:key yt-token} (str "issues/" issue "/customFields") {:fields "id,name,value(name, value, id)"}))))
   (let [issue-data (->> (yt-client/get-from-yt {:key yt-token}
                                                (str "issues/" issue)
-                                               {:fields "id,idReadable,summary,resolved,customFields(id,name,value(name, value, id)),tags(name)"})
+                                               {:fields "id,idReadable,summary,created,resolved,customFields(id,name,value(name, value, id)),tags(name)"})
                         (u/enhance-error (str "issue:" issue)))]
     {:idReadable   (:idReadable issue-data)
      :summary      (:summary issue-data)
      :id           (:id issue-data)
+     :created      (:created issue-data)
      :resolved     (:resolved issue-data)
      :assignee     (:name (custom-field issue-data "Assignee"))
      :state        (:name (custom-field issue-data "State"))
@@ -98,6 +99,87 @@
      :qa           (:name (custom-field issue-data "QA"))
      :verified     (:name (custom-field issue-data "Verified"))
      :triaged      (:name (custom-field issue-data "Triaged"))}))
+
+(declare enhance-issue-state)
+
+(def stale-dashboard-states
+  "Intermediate states in which an issue is not expected to stay for long"
+  #{"in progress" "fixed in branch" "testing" "backporting"})
+
+(def stale-state-min-days 20)
+
+(defn stale-state? [state]
+  (contains? stale-dashboard-states (some-> state str/lower-case)))
+
+(def state-history-fields
+  "Issue fields, which `enhance-issue-state` depends on, by their YouTrack names"
+  {"State"              :state
+   "Verified"           :verified
+   "QA"                 :qa
+   "Triaged"            :triaged
+   "Planned for"        :planned-for
+   "Included in builds" :included-in
+   "Available in"       :available-in})
+
+(def multi-value-fields #{:planned-for :included-in :available-in :tags})
+
+(defn load-state-history
+  "Activities of the fields and tags which affect the dashboard state"
+  [yt-token issue-id]
+  (yt-client/get-all-from-yt-lazy {:key yt-token}
+                                  (str "issues/" issue-id "/activities")
+                                  {:categories "CustomFieldCategory,TagsCategory"
+                                   :fields     "category(id),field(name),added(name),removed(name),timestamp"}
+                                  {}))
+
+(defn- activity-names [value]
+  (keep :name (if (sequential? value) value (when value [value]))))
+
+(defn- activity-key [activity]
+  (if (= "TagsCategory" (get-in activity [:category :id]))
+    :tags
+    (state-history-fields (get-in activity [:field :name]))))
+
+(defn- undo-activity
+  "Returns the issue data as it was before the activity"
+  [issue-data activity]
+  (if-let [k (activity-key activity)]
+    (let [added (set (activity-names (:added activity)))
+          removed (activity-names (:removed activity))]
+      (if (multi-value-fields k)
+        (update issue-data k #(concat (remove added %) removed))
+        (assoc issue-data k (first removed))))
+    issue-data))
+
+(defn state-since
+  "Timestamp (ms) since which the issue has its current dashboard state (as computed by `enhance-issue-state`).
+  Replays the field history backwards; changes made at the same moment are undone together."
+  [issue-data activities]
+  (let [state-of #(:state (enhance-issue-state %))
+        current (state-of issue-data)]
+    (loop [issue-data issue-data
+           groups (->> activities
+                       (filter activity-key)
+                       (group-by :timestamp)
+                       (sort-by key >))]
+      (if-let [[timestamp group] (first groups)]
+        (let [before (reduce undo-activity issue-data (reverse group))]
+          (if (= current (state-of before))
+            (recur before (rest groups))
+            timestamp))
+        (:created issue-data)))))
+
+(defn state-days
+  "Whole days the issue stays in its current dashboard state"
+  [yt-token issue-data now-ms]
+  (when-let [since (state-since issue-data (load-state-history yt-token (:id issue-data)))]
+    (quot (- now-ms since) (* 24 60 60 1000))))
+
+(defn stale-state-label
+  "Rounds days down to tens, e.g. 21..30 -> \">20d\", 31..40 -> \">30d\"; nil for 20 days and less"
+  [days]
+  (when (and days (> days stale-state-min-days))
+    (str ">" (* 10 (quot (dec days) 10)) "d")))
 
 (defmacro record-issue-data-loads [filename & body]
   `(let [old# load-issue-data
@@ -144,7 +226,9 @@
                                            (->> (:priority issue) (u/take-if (complement #{"Minor" "Normal"}))))]
                               (str "\\[" (capitalize- p) "\\]"))
                             (when (some #{:state-b} keys)
-                              (str "\\[" (:state issue) "\\]"))))]
+                              (str "\\[" (:state issue) "\\]"))
+                            (when (some #{:state-age} keys)
+                              (some->> (:state-days issue) (stale-state-label) (format "\\[%s\\]")))))]
           (str "**" bold "**"))))))
 
 (defn render [issue keys]
@@ -169,7 +253,8 @@
                                  (when (not= "Open" (:state iss))
                                    (if (contains? emphasized-dashboard-states (:state iss))
                                      :state-b
-                                     :state))])))
+                                     :state))
+                                 :state-age])))
 
 (defn enhance-issue-state [issue-data]
   (assoc issue-data :state
@@ -187,8 +272,19 @@
                         (= (:triaged issue-data) "Escalated") "Escalated"
                         :else recorded-state))))
 
-(defn patch-outdated [yt-token src renderer]
-  (let [lines (str/split-lines (or src ""))
+(defn- add-state-days
+  "Adds :state-days to the enhanced issue when it is in an intermediate state"
+  [yt-token now-ms raw-issue issue]
+  (if (stale-state? (:state issue))
+    (assoc issue :state-days (state-days yt-token raw-issue now-ms))
+    issue))
+
+(defn patch-outdated
+  ([yt-token src renderer]
+   (patch-outdated yt-token src renderer {}))
+  ([yt-token src renderer {:keys [state-age?]}]
+  (let [now-ms (System/currentTimeMillis)
+        lines (str/split-lines (or src ""))
         render-fn (cond
                     (fn? renderer) renderer
                     (vector? renderer) (fn [is] (render is renderer)))
@@ -206,7 +302,9 @@
                                (let [parsed (parse-md-line line)]
                                  (if (= :issue (:type parsed))
                                    (let [issue-id (:value parsed)
-                                         issue (enhance-issue-state (load-issue-data yt-token issue-id))
+                                         raw-issue (load-issue-data yt-token issue-id)
+                                         issue (cond->> (enhance-issue-state raw-issue)
+                                                 state-age? (add-state-days yt-token now-ms raw-issue))
                                          ; Add numbering for duplicates
                                          issue-with-number (if (duplicate-issues issue-id)
                                                              (let [current-count (swap! issue-counters update issue-id (fnil inc 0))]
@@ -229,7 +327,7 @@
                   (keep :line)
                   (str/join "\n"))
      :issues (keep :issue processed-lines)
-     :diffs  diffs}))
+     :diffs  diffs})))
 
 (defn patch-outdated-plan [yt-token src]
   (patch-outdated yt-token src
@@ -258,7 +356,7 @@
     (let [article (load-article yt-token (:id article))
           assignee (:summary article)
           content (:content article)
-          patched (patch-outdated yt-token content (wd-conditional-assignee-renderer (:summary article)))]
+          patched (patch-outdated yt-token content (wd-conditional-assignee-renderer (:summary article)) {:state-age? true})]
       (when (not-empty (:diffs patched))
         (let [dir (clojure.java.io/file dir)]
           (.mkdirs dir)
@@ -277,7 +375,7 @@
           (keep (fn [article]
                   (let [article-data (load-article yt-token (:id article))
                         content (:content article-data)
-                        patched (patch-outdated yt-token content (wd-conditional-assignee-renderer (:summary article)))
+                        patched (patch-outdated yt-token content (wd-conditional-assignee-renderer (:summary article)) {:state-age? true})
                         included (into #{} (:issues patched))
                         missed (->> all-team-open-issues
                                     (filter #(= (:assignee %) (:summary article)))
