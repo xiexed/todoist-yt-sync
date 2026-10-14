@@ -266,30 +266,63 @@
           (spit (clojure.java.io/file dir (str assignee "-patched.md")) (:text patched)))))
     ))
 
+(def not-team-members-dashboard "Not team members")
+
+(defn not-team-members-dashboard? [article]
+  (= (str/lower-case not-team-members-dashboard)
+     (some-> (:summary article) (str/trim) (str/lower-case))))
+
+(defn- recording-renderer
+  "Wraps `renderer` so that every issue still kept on the dashboard is added to `kept-issues`"
+  [renderer kept-issues]
+  (fn [issue]
+    (let [rendered (renderer issue)]
+      (when (:body rendered)
+        (swap! kept-issues conj issue))
+      rendered)))
+
+(defn reassigned-to-team-members [team-members issues]
+  (->> issues
+       (filter #(contains? team-members (:assignee %)))
+       (map (fn [issue] {:issue    (:idReadable issue)
+                         :assignee (:assignee issue)}))
+       (distinct)))
+
 (defn update-dashboards-on-server
   ([yt-token] (update-dashboards-on-server yt-token false))
   ([yt-token dry-run?]
    (let [all-team-open-issues (map yt/clean-up
                                    (yt/issues {:key yt-token}
                                               "#{CnD Team Related} state: Open state: {In Progress} Assignee: -Sergey.Simonchik Type: -{User Story} "
-                                              {:fields "id,idReadable,customFields(id,name,value(name, value, id))"}))]
-     (->> (load-dashboard-articles yt-token)
+                                              {:fields "id,idReadable,customFields(id,name,value(name, value, id))"}))
+         articles (load-dashboard-articles yt-token)
+         team-members (->> articles
+                           (remove not-team-members-dashboard?)
+                           (map :summary)
+                           (set))]
+     (->> articles
           (keep (fn [article]
                   (let [article-data (load-article yt-token (:id article))
                         content (:content article-data)
-                        patched (patch-outdated yt-token content (wd-conditional-assignee-renderer (:summary article)))
+                        kept-issues (atom [])
+                        patched (patch-outdated yt-token content
+                                                (recording-renderer (wd-conditional-assignee-renderer (:summary article))
+                                                                    kept-issues))
                         included (into #{} (:issues patched))
                         missed (->> all-team-open-issues
                                     (filter #(= (:assignee %) (:summary article)))
                                     (map :idReadable)
-                                    (remove included))]
+                                    (remove included))
+                        reassigned (when (not-team-members-dashboard? article)
+                                     (reassigned-to-team-members team-members @kept-issues))]
                     (when (and (not dry-run?) (not-empty (:diffs patched)))
                       (update-article yt-token (:id article) (:text patched)))
-                    (when (or (not-empty (:diffs patched)) (not-empty missed))
-                      {:id     (:idReadable article)
-                       :name   (:summary article)
-                       :missed missed
-                       :diffs  (:diffs patched)}))))
+                    (when (or (not-empty (:diffs patched)) (not-empty missed) (not-empty reassigned))
+                      (cond-> {:id     (:idReadable article)
+                               :name   (:summary article)
+                               :missed missed
+                               :diffs  (:diffs patched)}
+                        (not-empty reassigned) (assoc :reassigned reassigned))))))
           (doall)))))
 
 (defn update-metaissue-on-server [yt-token issue-id]

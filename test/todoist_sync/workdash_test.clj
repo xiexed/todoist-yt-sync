@@ -237,3 +237,28 @@
         (is (= [{:issue-ids ["IJPL-3"]
                  :command "add tag: has-priority-list"}]
                @commands))))))
+
+(deftest test-update-dashboards-reports-not-team-issues-reassigned-to-team
+  (testing "Issues on the \"Not team members\" dashboard assigned back to team members are reported"
+    (let [issues {"IJPL-1" {:idReadable "IJPL-1" :summary "Outsider issue" :assignee "Outsider" :state "Open"}
+                  "IJPL-2" {:idReadable "IJPL-2" :summary "Back to Alice" :assignee "Alice Smith" :state "Open"}
+                  "IJPL-3" {:idReadable "IJPL-3" :summary "Fixed for Bob" :assignee "Bob Jones" :state "Fixed"
+                            :verified "Yes"}
+                  "IJPL-4" {:idReadable "IJPL-4" :summary "Alice own issue" :assignee "Alice Smith" :state "Open"}}
+          articles {"1" {:summary "Alice Smith" :content "# Alice\n- IJPL-4 Alice own issue"}
+                    "2" {:summary "Not team members"
+                         :content "# Others\n- IJPL-1 Outsider issue\n- IJPL-2 Back to Alice\n- IJPL-3 Fixed for Bob"}
+                    "3" {:summary "Bob Jones" :content "# Bob"}}]
+      (with-redefs [yt-client/issues (constantly [])
+                    wd/load-dashboard-articles (fn [_]
+                                                 (map (fn [[id {:keys [summary]}]]
+                                                        {:id id :idReadable (str "IDEA-A-" id) :summary summary})
+                                                      (sort articles)))
+                    wd/load-article (fn [_ id] (get articles id))
+                    wd/load-issue-data (fn [_ issue] (issues issue))]
+        (let [results (wd/update-dashboards-on-server "token" true)
+              not-team (first (filter #(= "Not team members" (:name %)) results))]
+          (is (= [{:issue "IJPL-2" :assignee "Alice Smith"}]
+                 (:reassigned not-team)))
+          (is (every? #(nil? (:reassigned %))
+                      (remove #(= "Not team members" (:name %)) results))))))))
