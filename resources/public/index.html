@@ -263,6 +263,16 @@
                                             </div>
                                         </q-expansion-item>
                                     </q-card-section>
+                                    <q-card-section v-if="person.reassigned && person.reassigned.length > 0">
+                                        <div class="text-subtitle1 q-mb-sm">Reassigned to team members ({{ person.reassigned.length }}):</div>
+                                        <li v-for="item in person.reassigned" :key="item.issue">
+                                            <a target="_blank" rel="noopener noreferrer"
+                                               :href="'https://youtrack.jetbrains.com/issue/' + item.issue">
+                                               {{ item.issue }}
+                                            </a>
+                                            &rarr; {{ item.assignee }}
+                                        </li>
+                                    </q-card-section>
                                     <q-card-section v-if="!hasResultDetails(person)" class="text-center text-grey">
                                         No changes
                                     </q-card-section>
@@ -442,13 +452,14 @@
                 return Boolean(
                     (result.diffs && result.diffs.length > 0) ||
                     (result.missed && result.missed.length > 0) ||
+                    (result.reassigned && result.reassigned.length > 0) ||
                     (result.errors && result.errors.length > 0)
                 );
             },
 
             isDashboardResult(data) {
                 return Array.isArray(data) && data.length > 0 && data.some((item) => (
-                    item.diffs || item.missed || item.errors
+                    item.diffs || item.missed || item.reassigned || item.errors
                 ));
             },
             

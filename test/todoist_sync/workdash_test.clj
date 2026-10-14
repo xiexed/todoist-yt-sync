@@ -262,3 +262,14 @@
                  (:reassigned not-team)))
           (is (every? #(nil? (:reassigned %))
                       (remove #(= "Not team members" (:name %)) results))))))))
+
+(deftest test-report-html-shows-reassigned-issues
+  (let [html (wd/format-report-html [{:id         "IDEA-A-2"
+                                      :name       "Not team members"
+                                      :missed     []
+                                      :diffs      []
+                                      :reassigned [{:issue "IJPL-2" :assignee "Alice Smith"}]}])]
+    (is (clojure.string/includes? html "Reassigned to team members (1):"))
+    (is (clojure.string/includes? html "https://youtrack.jetbrains.com/issue/IJPL-2"))
+    (is (clojure.string/includes? html "Alice Smith"))
+    (is (not (clojure.string/includes? html "No changes")))))

@@ -454,7 +454,7 @@
               {:href (str "https://youtrack.jetbrains.com/articles/" (:id result))
                :target "_blank"}
               (:name result) " (" (:id result) ")"]]
-            (if (and (empty? (:diffs result)) (empty? (:missed result)))
+            (if (and (empty? (:diffs result)) (empty? (:missed result)) (empty? (:reassigned result)))
               [:p.no-changes "No changes"]
               (list
                 (when (not-empty (:diffs result))
@@ -475,7 +475,18 @@
                        [:a.issue-link
                         {:href (str "https://youtrack.jetbrains.com/issue/" issue)
                          :target "_blank"}
-                        issue]])]])))]))])))
+                        issue]])]])
+                (when (not-empty (:reassigned result))
+                  [:div.missed
+                   [:div.missed-title "Reassigned to team members (" (count (:reassigned result)) "):"]
+                   [:ul
+                    (for [{:keys [issue assignee]} (:reassigned result)]
+                      [:li
+                       [:a.issue-link
+                        {:href (str "https://youtrack.jetbrains.com/issue/" issue)
+                         :target "_blank"}
+                        issue]
+                       " → " assignee])]])))]))])))
 
 (defn upload-report-to-article
   "Upload HTML report as attachment to YouTrack article"

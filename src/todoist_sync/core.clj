@@ -185,7 +185,11 @@
               (when (not-empty (:diffs result))
                 (println "  Diffs:" (count (:diffs result))))
               (when (not-empty (:missed result))
-                (println "  Missed issues:" (str/join ", " (:missed result)))))
+                (println "  Missed issues:" (str/join ", " (:missed result))))
+              (when (not-empty (:reassigned result))
+                (println "  Reassigned to team members:"
+                         (str/join ", " (map (fn [{:keys [issue assignee]}] (str issue " -> " assignee))
+                                             (:reassigned result))))))
             (when upload-to-youtrack?
               (if report-article-id
                 (do
